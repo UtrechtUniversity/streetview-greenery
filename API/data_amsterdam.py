@@ -51,14 +51,16 @@ class PanoramaAmsterdam(object):
             self.panoramas.extend(response_dict["_embedded"]["panoramas"])
         self.panoramas.sort(key=get_id)
 
-    def download(self, dest_dir="adam_panorama"):
+    def download(self, dest_dir="data.amsterdam"):
+        dest_dir = os.path.join(dest_dir, "pics")
         os.makedirs(dest_dir, exist_ok=True)
         for pano in self.panoramas:
             pano_url = pano["_links"]["equirectangular_small"]["href"]
             filename = pano["filename"]
             dest_fp = os.path.join(dest_dir, filename)
-            urllib.request.urlretrieve(pano_url, dest_fp)
+            if not os.path.isfile(dest_fp):
+                urllib.request.urlretrieve(pano_url, dest_fp)
 
-    def print_panoramas(self):
+    def print_ids(self):
         for pano in self.panoramas:
             print(pano["pano_id"])
