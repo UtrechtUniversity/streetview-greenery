@@ -2,6 +2,8 @@
 #
 # Cityscapes labels
 #
+# Copied from https://github.com/mcordts/cityscapesScripts/blob
+#                    /master/cityscapesscripts/helpers/labels.py
 
 from __future__ import print_function, absolute_import, division
 from collections import namedtuple

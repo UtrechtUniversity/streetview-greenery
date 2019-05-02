@@ -8,8 +8,18 @@ import requests
 import urllib.request
 
 
-def get_id(elem):
+def _get_id(elem):
     return elem['pano_id']
+
+
+def _meta_request_file(params):
+    file_name = "meta"
+    if len(params) == 0:
+        return "all.json"
+    for param in params:
+        file_name += f"_{param}={params[param]}"
+    file_name += ".json"
+    return file_name
 
 
 class PanoramaAmsterdam(object):
@@ -18,8 +28,9 @@ class PanoramaAmsterdam(object):
     def __init__(self):
         self.url = "https://api.data.amsterdam.nl/panorama/panoramas/"
         self.panoramas = []
+        self.files = []
 
-    def get(self, center=None, radius=None):
+    def get(self, center=None, radius=None, meta_dir="data.amsterdam"):
         params = {
             'srid': 4326,
             'newest_in_range': True,
@@ -30,14 +41,21 @@ class PanoramaAmsterdam(object):
             if radius is not None:
                 params['radius'] = float(radius)
 
-        try:
-            response = requests.get(self.url, params=params)
-        except requests.exceptions.RequestException:
-            print("HTTP request failed.")
-            print(response.status_code)
-            return None
+        meta_fp = os.path.join(meta_dir, _meta_request_file(params))
+        if os.path.exists(meta_fp):
+            with open(meta_fp, "r") as f:
+                response_dict = json.load(f)
+        else:
+            try:
+                response = requests.get(self.url, params=params)
+            except requests.exceptions.RequestException:
+                print("HTTP request failed.")
+                print(response.status_code)
+                return None
+            response_dict = json.loads(response.content)
+            with open(meta_fp, "w") as f:
+                json.dump(response_dict, f)
 
-        response_dict = json.loads(response.content)
         self.panoramas = response_dict["_embedded"]["panoramas"]
 
         while response_dict['_links']['next']['href'] is not None:
@@ -49,7 +67,7 @@ class PanoramaAmsterdam(object):
                 return None
             response_dict = json.loads(response.content)
             self.panoramas.extend(response_dict["_embedded"]["panoramas"])
-        self.panoramas.sort(key=get_id)
+        self.panoramas.sort(key=_get_id)
 
     def download(self, dest_dir="data.amsterdam"):
         dest_dir = os.path.join(dest_dir, "pics")
@@ -60,7 +78,11 @@ class PanoramaAmsterdam(object):
             dest_fp = os.path.join(dest_dir, filename)
             if not os.path.isfile(dest_fp):
                 urllib.request.urlretrieve(pano_url, dest_fp)
+            self.files.append(dest_fp)
 
     def print_ids(self):
         for pano in self.panoramas:
             print(pano["pano_id"])
+
+    def file_names(self):
+        return self.files
