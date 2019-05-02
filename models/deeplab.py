@@ -20,9 +20,6 @@ from models.labels import labels
 
 def _get_model(model_name):
     model_dir = "pre_trained_models"
-#     model_url = "http://download.tensorflow.org/models/"\
-#                 "deeplabv3_mnv2_cityscapes_train_2018_02_05.tar.gz"
-
     url_prefix = 'http://download.tensorflow.org/models/'
 
     if model_name == "mobilenet":
@@ -54,6 +51,10 @@ class DeepLabModel(object):
         self.sess = None
         self.load(model_name)
         self.load_segmentation_scheme()
+        self.model_name = model_name
+
+    def id(self):
+        return "deeplab_"+self.model_name
 
     def load(self, model_name):
         # Extract frozen graph from tar archive.
@@ -110,14 +111,25 @@ class DeepLabModel(object):
             self.OUTPUT_TENSOR_NAME,
             feed_dict={self.INPUT_TENSOR_NAME: [np.asarray(resized_image)]})
         seg_map = batch_seg_map[0]
-        return resized_image, seg_map, self.color_map
+        results = {
+            'seg_map': seg_map,
+            'color_map': self.color_map
+        }
+        return results
 
 
-def plot_segmentation(image, seg_map, color_map):
+def plot_segmentation(image_fp, seg_map, color_map):
     """Visualizes input image, segmentation map and overlay view."""
 
-    label_names = color_map[0]
-    label_colors = color_map[1]
+    seg_map = np.array(seg_map)
+    seg_size = (seg_map.shape[1], seg_map.shape[0])
+    with open(image_fp, "rb") as f:
+        jpeg_str = f.read()
+    orig_image = Image.open(BytesIO(jpeg_str))
+    image = orig_image.resize(seg_size, Image.ANTIALIAS)
+
+    label_names = np.array(color_map[0])
+    label_colors = np.array(color_map[1])
 
     plt.figure(figsize=(15, 5))
     grid_spec = gridspec.GridSpec(1, 4, width_ratios=[6, 6, 6, 1])
@@ -149,21 +161,3 @@ def plot_segmentation(image, seg_map, color_map):
     ax.tick_params(width=0.0)
     plt.grid(False)
     plt.show()
-
-
-# MODEL = DeepLabModel(download_path)
-# print('model loaded successfully!')
-
-# img_fp = "../data.amsterdam/pics/pano_0002_003645.jpg"
-
-
-# def run_visualization(img_fp):
-#     """Inferences DeepLab model and visualizes result."""
-#     resized_im, seg_map = MODEL.run(original_im)
-
-#     vis_segmentation(resized_im, seg_map)
-
-
-# run_visualization(img_fp)
-
-
