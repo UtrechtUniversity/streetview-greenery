@@ -1,10 +1,12 @@
-#!/usr/bin/python
-#
-# Cityscapes labels
-#
-# Copied from https://github.com/mcordts/cityscapesScripts/blob
-#                    /master/cityscapesscripts/helpers/labels.py
+"""
+Cityscapes labels
 
+Copied from https://github.com/mcordts/cityscapesScripts/blob
+                   /master/cityscapesscripts/helpers/labels.py
+
+Main use is to load the "labels" variable in which the trainId's correspond
+to names and colors.
+"""
 from __future__ import print_function, absolute_import, division
 from collections import namedtuple
 

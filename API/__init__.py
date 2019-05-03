@@ -1,0 +1,1 @@
+from API.data_amsterdam import PanoramaAmsterdam

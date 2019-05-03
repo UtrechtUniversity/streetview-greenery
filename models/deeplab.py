@@ -1,4 +1,7 @@
 '''
+Defines the class to load a pre-trained model from the DeepLab project.
+The models are trained on the City-scapes dataset, with their trainId's.
+
 Based on https://github.com/tensorflow/models/blob/master/research/
                 /deeplab/deeplab_demo.ipynb
 
@@ -15,10 +18,11 @@ import numpy as np
 from PIL import Image
 
 import tensorflow as tf
-from models.labels import labels
+from models.city_scapes import labels as cs_labels
 
 
 def _get_model(model_name):
+    """ Download/find a DeepLab model from an abbreviated model_name. """
     model_dir = "pre_trained_models"
     url_prefix = 'http://download.tensorflow.org/models/'
 
@@ -38,7 +42,7 @@ def _get_model(model_name):
 
 
 class DeepLabModel(object):
-    """Class to load deeplab model and run inference."""
+    """ Class to load DeepLab model and run inference. """
 
     INPUT_TENSOR_NAME = 'ImageTensor:0'
     OUTPUT_TENSOR_NAME = 'SemanticPredictions:0'
@@ -46,7 +50,7 @@ class DeepLabModel(object):
     FROZEN_GRAPH_NAME = 'frozen_inference_graph'
 
     def __init__(self, model_name="mobilenet"):
-        """Creates and loads pretrained deeplab model."""
+        """ Creates and loads pretrained deeplab model. """
         self.graph = tf.Graph()
         self.sess = None
         self.load(model_name)
@@ -54,10 +58,11 @@ class DeepLabModel(object):
         self.model_name = model_name
 
     def id(self):
+        """ Returns an identifier for the model. """
         return "deeplab_"+self.model_name
 
     def load(self, model_name):
-        # Extract frozen graph from tar archive.
+        """ Extract frozen graph from tar archive. """
         tarball_fp = _get_model(model_name)
         tar_file = tarfile.open(tarball_fp)
         for tar_info in tar_file.getmembers():
@@ -77,10 +82,11 @@ class DeepLabModel(object):
         self.sess = tf.Session(graph=self.graph)
 
     def load_segmentation_scheme(self):
+        """ Load the City-scapes segmentation/color scheme. """
         self.label_names = []
         self.label_colors = []
 
-        for label in labels:
+        for label in cs_labels:
             if label.trainId != 255:
                 self.label_names.append(label.name)
                 self.label_colors.append(list(label.color))
@@ -121,6 +127,7 @@ class DeepLabModel(object):
 def plot_segmentation(image_fp, seg_map, color_map):
     """Visualizes input image, segmentation map and overlay view."""
 
+    # Resize the image to the segmentation map.
     seg_map = np.array(seg_map)
     seg_size = (seg_map.shape[1], seg_map.shape[0])
     with open(image_fp, "rb") as f:
@@ -134,23 +141,27 @@ def plot_segmentation(image_fp, seg_map, color_map):
     plt.figure(figsize=(15, 5))
     grid_spec = gridspec.GridSpec(1, 4, width_ratios=[6, 6, 6, 1])
 
+    # Plot the resized image.
     plt.subplot(grid_spec[0])
     plt.imshow(image)
     plt.axis('off')
     plt.title('input image')
 
+    # Plot the segmentation map with the right colors.
     plt.subplot(grid_spec[1])
     seg_image = label_colors[seg_map].astype(np.uint8)
     plt.imshow(seg_image)
     plt.axis('off')
     plt.title('segmentation map')
 
+    # Overlay the resized image and the segmentation map.
     plt.subplot(grid_spec[2])
     plt.imshow(image)
     plt.imshow(seg_image, alpha=0.7)
     plt.axis('off')
     plt.title('segmentation overlay')
 
+    # Plot the legend showing the segmentation colors and their meaning.
     unique_labels = np.unique(seg_map)
     ax = plt.subplot(grid_spec[3])
     img_colors = np.reshape(label_colors[unique_labels], (-1, 1, 3))
