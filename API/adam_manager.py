@@ -62,6 +62,7 @@ class AdamPanoramaManager(BasePanoramaManager):
     def _request_params(self, center=None, radius=None):
         params = {
             'srid': 4326,
+            'page_size': 10000,
         }
         if radius is not None and radius <= 250:
             params['newest_in_range'] = True

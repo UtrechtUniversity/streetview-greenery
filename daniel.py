@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 
-from API import PanoramaAmsterdam
 from models import DeepLabModel
 from greenery.segment_perc import VegetationPercentage, plot_greenery
+from API import AdamPanoramaManager
 
 
 def main():
-    panoramas = PanoramaAmsterdam()
+    panoramas = AdamPanoramaManager(seg_model=DeepLabModel,
+                                    green_model=VegetationPercentage)
     cc = [52.360224, 4.935102]
     radius = 250  # meters
     panoramas.get(center=cc, radius=radius)
-    panoramas.download(stride=1)
-    panoramas.seg_analysis(model=DeepLabModel)
-    green_res = panoramas.greenery_analysis(model=DeepLabModel, greenery=VegetationPercentage)
-    panoramas.save()
+    panoramas.load(n_sample=500)
+    panoramas.seg_analysis()
+    green_res = panoramas.green_analysis()
     plot_greenery(green_res)
 
 
