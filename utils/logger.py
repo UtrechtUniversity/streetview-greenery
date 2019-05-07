@@ -54,15 +54,6 @@ class MetaLogger(object):
         else:
             self.load(self.meta_fp)
 
-    def add_meta_data(self, meta_data={}, panorama_fp=None):
-        """ Add the raw response data from the API. """
-        if panorama_fp is not None:
-            self.panorama_fp = panorama_fp
-        if self.panorama_fp is None:
-            raise ValueError("Need panorama file name to store meta data.")
-        self.meta_fp = _meta_fp(self.panorama_fp)
-        self.log_dict['panorama_fp'] = self.panorama_fp
-        self.log_dict['meta_data'] = meta_data
 #         self.save()
 
     def add_results(self, results, results_id="default"):

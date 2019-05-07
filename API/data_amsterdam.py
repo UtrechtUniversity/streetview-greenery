@@ -10,24 +10,13 @@ import urllib.request
 from utils.logger import MetaLogger
 from models.deeplab import DeepLabModel, plot_segmentation
 from greenery.segment_perc import VegetationPercentage
-from pygments.styles.paraiso_dark import GREEN
 
 
 def _get_id(elem):
     return elem['pano_id']
 
 
-def _meta_request_file(params):
-    file_name = "meta"
-    if len(params) == 0:
-        return "all.json"
-    for param in params:
-        file_name += f"_{param}={params[param]}"
-    file_name += ".json"
-    return file_name
-
-
-class PanoramaAmsterdam(object):
+class PanoramaManager(object):
     " Object for using the Amsterdam data API"
 
     def __init__(self):
@@ -64,7 +53,8 @@ class PanoramaAmsterdam(object):
 
             while response_dict['_links']['next']['href'] is not None:
                 try:
-                    response = requests.get(response_dict['_links']['next']['href'])
+                    response = requests.get(
+                        response_dict['_links']['next']['href'])
                 except requests.RequestException:
                     print("HTTP request failed.")
                     print(response.status_code)
@@ -107,7 +97,8 @@ class PanoramaAmsterdam(object):
                 seg_res = new_model.run(panorama_fp, **model_kwargs)
                 logger.add_results(seg_res, results_id=model_id)
 
-    def greenery_analysis(self, model=DeepLabModel, greenery=VegetationPercentage, **model_kwargs):
+    def greenery_analysis(self, model=DeepLabModel,
+                          greenery=VegetationPercentage, **model_kwargs):
         new_model = model(**model_kwargs)
         model_id = new_model.id()
         green_model = greenery()
@@ -137,9 +128,6 @@ class PanoramaAmsterdam(object):
     def show(self, model=DeepLabModel):
         model_id = model().id()
         for logger in self.meta_loggers:
-#             greenery = VegetationPercentage()
-#             
-#             (logger.log_dict['segmentation'][model_id]))
             seg_map = logger.log_dict['segmentation'][model_id]['seg_map']
             color_map = logger.log_dict['segmentation'][model_id]['color_map']
             plot_segmentation(logger.panorama_fp, seg_map, color_map)

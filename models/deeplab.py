@@ -107,7 +107,6 @@ class DeepLabModel(object):
         with open(image_fp, "rb") as f:
             jpeg_str = f.read()
         image = Image.open(BytesIO(jpeg_str))
-        print('running deeplab on image %s...' % image_fp)
 
         width, height = image.size
         resize_ratio = 1.0 * self.INPUT_SIZE / max(width, height)
