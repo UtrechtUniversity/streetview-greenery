@@ -1,9 +1,6 @@
-import os
 from os.path import splitext
 from abc import ABC
 import json
-from models.deeplab import DeepLabModel
-from greenery.segment_perc import VegetationPercentage
 
 
 def _meta_fp(panorama_fp):

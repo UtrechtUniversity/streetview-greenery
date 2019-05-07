@@ -1,12 +1,7 @@
 
-import os
 import json
 import requests
-import urllib.request
 
-from utils.logger import MetaLogger
-from models.deeplab import DeepLabModel, plot_segmentation
-from greenery.segment_perc import VegetationPercentage
 from API import AdamPanorama
 from API.panorama_manager import BasePanoramaManager
 from json.decoder import JSONDecodeError
