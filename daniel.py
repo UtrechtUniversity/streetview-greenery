@@ -14,7 +14,7 @@ def main():
     panoramas.load(n_sample=500)
     panoramas.seg_analysis()
     green_res = panoramas.green_analysis()
-    plot_greenery(green_res)
+    plot_greenery(green_res, cmap="YlGn")
 
 
 if __name__ == "__main__":

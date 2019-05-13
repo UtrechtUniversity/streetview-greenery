@@ -5,6 +5,19 @@ import requests
 from API import AdamPanorama
 from API.panorama_manager import BasePanoramaManager
 from json.decoder import JSONDecodeError
+from tqdm import tqdm
+
+
+def _convert_meta(meta_data):
+    all_dict = []
+    for meta in meta_data:
+#         print(meta)
+        new_dict = meta
+        new_dict["equirectangular_url"] = new_dict["_links"][
+            "equirectangular_small"]["href"]
+        del new_dict["_links"]
+        all_dict.append(new_dict)
+    return all_dict
 
 
 class AdamPanoramaManager(BasePanoramaManager):
@@ -36,18 +49,25 @@ class AdamPanoramaManager(BasePanoramaManager):
             print("Error (data.amsterdam): response not in correct format.")
             raise ValueError(response.content)
 
-        meta_list.extend(response_dict["_embedded"]["panoramas"])
-
-        while response_dict['_links']['next']['href'] is not None:
-            try:
-                response = requests.get(
-                    response_dict['_links']['next']['href'])
-            except requests.RequestException:
-                print("HTTP request failed.")
-                print(response.status_code)
-                return None
-            response_dict = json.loads(response.content)
-            meta_list.extend(response_dict["_embedded"]["panoramas"])
+        new_list = _convert_meta(response_dict["_embedded"]["panoramas"])
+        meta_list.extend(new_list)
+        n_total = response_dict['count']
+#         print(f"Found {n_total}")
+        with tqdm(total=n_total) as pbar:
+            pbar.update(params["page_size"])
+            while response_dict['_links']['next']['href'] is not None:
+                try:
+                    response = requests.get(
+                        response_dict['_links']['next']['href'])
+                except requests.RequestException:
+                    print("HTTP request failed.")
+                    print(response.status_code)
+                    return None
+                response_dict = json.loads(response.content)
+                new_list = _convert_meta(response_dict["_embedded"]["panoramas"])
+                meta_list.extend(new_list)
+                pbar.update(len(response_dict["_embedded"]["panoramas"]))
+#         print(meta_list)
         return meta_list
 
     def _meta_request_file(self, params):
@@ -55,7 +75,8 @@ class AdamPanoramaManager(BasePanoramaManager):
         if len(params) == 0:
             return "all.json"
         for param in params:
-            file_name += f"_{param}={params[param]}"
+            if param != "page_size":
+                file_name += f"_{param}={params[param]}"
         file_name += ".json"
         return file_name
 

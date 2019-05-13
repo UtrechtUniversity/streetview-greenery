@@ -10,7 +10,7 @@ from greenery.segment_perc import VegetationPercentage
 
 
 class BasePanoramaManager(ABC):
-    " Object for using the Amsterdam data API"
+    " Base class for managing a data set of panorama's. "
 
     def __init__(self, seg_model=DeepLabModel, seg_kwargs={},
                  green_model=VegetationPercentage, green_kwargs={}):
@@ -21,6 +21,7 @@ class BasePanoramaManager(ABC):
         self.green_model = green_model(**green_kwargs)
 
     def get(self, **request_kwargs):
+        " Get meta data of the requested pictures. "
         data_dir = self.data_dir
         params = self._request_params(**request_kwargs)
         meta_file = self._meta_request_file(params)
@@ -35,10 +36,10 @@ class BasePanoramaManager(ABC):
                 os.makedirs(self.data_dir, exist_ok=True)
             with open(meta_fp, "w") as f:
                 json.dump(self.meta_data, f, indent=2)
-
         print(f"List contains {len(self.meta_data)} pictures. ")
 
     def load(self, n_sample=None):
+        " Download/read pictures. "
         n_panorama = len(self.meta_data)
         np.random.seed(1283742)
         if n_sample is None:
@@ -54,11 +55,13 @@ class BasePanoramaManager(ABC):
             self.panoramas.append(self.new_panorama(meta_data=meta))
 
     def seg_analysis(self):
+        " Do segmentation analysis. "
         print("Doing segmentation analysis..")
         for panorama in tqdm(self.panoramas):
             panorama.seg_analysis(seg_model=self.seg_model)
 
     def green_analysis(self):
+        " Do greenery analysis. "
         green_dict = {
             'green': [],
             'lat': [],
