@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import griddata
 from pykrige.ok import OrdinaryKriging
-from show_map import green_map_to_img, create_map
+from utils.mapping import green_map_to_img, create_map
 
 
 class VegetationPercentage(object):
@@ -37,9 +37,7 @@ def plot_greenery(green_res, cmap="gist_rainbow"):
 
     fig = plt.figure()
     fig.add_subplot(111)
-    print(xi.shape)
-    print(yi.shape)
-    print(green_i.shape)
+
     plt.contourf(xi, yi, green_i, np.linspace(0, 0.75, num=40), cmap=cmap)
     plt.plot(long, lat, 'k.')
     plt.xlabel('xi', fontsize=16)
@@ -64,7 +62,8 @@ def plot_green_krige(green_res, cmap="gist_rainbow"):
         green[i][1] = green_res["lat"][i]
         green[i][2] = green_res["green"][i]
 
-    OK = OrdinaryKriging(green[:, 0], green[:, 1], green[:, 2], variogram_model='spherical')
+    OK = OrdinaryKriging(green[:, 0], green[:, 1], green[:, 2],
+                         variogram_model='spherical')
     z, _ = OK.execute('grid', long_grid, lat_grid)
 
     create_map(z, lat_grid, long_grid)
