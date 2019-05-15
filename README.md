@@ -4,7 +4,15 @@ Project to retrieve and process panoramic photo's and compute the greenery as pe
 
 ## Description
 
-The base idea of this package is to download panorama (or other) pictures of living/working area's and compute the greenness of that area. The first step is to do a segmentation analysis: assigning object classes to individual pixels. The second step is to convert these segmented pictures into a measure of greenness. The last step is to compute a map from individiual greenness measures. 
+The base idea of this package is to download panorama (or other) pictures of living/working area's and compute the greenness of that area. The first step is to do a segmentation analysis: assigning object classes to individual pixels. The second step is to convert these segmented pictures into a measure of greenness. The last step is to compute a map from individiual greenness measures.
+
+## Example maps
+
+Sampled map of Amsterdam/Almere: [link](https://qubixes.github.io/streetview-greenery/adam_alm.html)
+
+Detailed map of Muiderpoort region: [link](https://qubixes.github.io/streetview-greenery/muiderpoort.html)
+
+Detailed map of Gaasperdam region: [link](https://qubixes.github.io/streetview-greenery/mijndenhof.html)
 
 ## Installation
 
