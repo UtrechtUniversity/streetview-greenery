@@ -8,11 +8,11 @@ The base idea of this package is to download panorama (or other) pictures of liv
 
 ## Example maps
 
-Sampled map of Amsterdam/Almere: [link](https://qubixes.github.io/streetview-greenery/adam_alm.html)
+Sampled map of Amsterdam/Almere: [link](https://qubixes.github.io/streetview-greenery/docs/adam_alm.html)
 
-Detailed map of Muiderpoort region: [link](https://qubixes.github.io/streetview-greenery/muiderpoort.html)
+Detailed map of Muiderpoort region: [link](https://qubixes.github.io/streetview-greenery/docs/muiderpoort.html)
 
-Detailed map of Gaasperdam region: [link](https://qubixes.github.io/streetview-greenery/mijndenhof.html)
+Detailed map of Gaasperdam region: [link](https://qubixes.github.io/streetview-greenery/docs/mijndenhof.html)
 
 ## Installation
 
