@@ -12,7 +12,7 @@ There is at the moment no real installation script. Just make sure you have all 
 
 ### Requirements / dependencies
 
-- Python 3.6
+- Python 3.6+
 - Pillow
 - numpy
 - matplotlib
@@ -35,6 +35,8 @@ panoramas = AdamPanoramaManager(seg_model=DeepLabModel,
                                 green_model=VegetationPercentage
 )
 ```
+
+Currently, there is only one data source implemented, which is the [data.amsterdam](http://data.amsterdam.nl) API. 
 
 #### Loading meta-data
 

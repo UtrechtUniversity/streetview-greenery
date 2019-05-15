@@ -46,7 +46,7 @@ def plot_greenery(green_res, cmap="gist_rainbow"):
     plt.show()
 
 
-def plot_green_krige(green_res, cmap="gist_rainbow"):
+def plot_green_krige(green_res, cmap="gist_rainbow", html_file="index.html"):
     n_grid = 200
 #     green_list = np.array(green_res['green'])
     lat = np.array(green_res['lat'])
@@ -64,9 +64,9 @@ def plot_green_krige(green_res, cmap="gist_rainbow"):
 
     OK = OrdinaryKriging(green[:, 0], green[:, 1], green[:, 2],
                          variogram_model='spherical')
-    z, _ = OK.execute('grid', long_grid, lat_grid)
+    z, _ = OK.execute('grid', long_grid, lat_grid, backend='loop')
 
-    create_map(z, lat_grid, long_grid)
+    create_map(z, lat_grid, long_grid, html_file, cmap)
 #     plot_grid(xi, yi, z, long, lat, cmap)
 
 

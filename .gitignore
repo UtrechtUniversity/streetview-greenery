@@ -6,6 +6,7 @@ output/
 batch_files/
 pre_trained_models/
 data.amsterdam/
+.DS_Store
 
 # exclude PyDev/Eclipse files
 .pydevproject

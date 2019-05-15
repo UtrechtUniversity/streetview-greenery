@@ -7,6 +7,7 @@ from tqdm import tqdm
 from models.deeplab import DeepLabModel
 from abc import ABC
 from greenery.segment_perc import VegetationPercentage
+from urllib.error import HTTPError
 
 
 class BasePanoramaManager(ABC):
@@ -52,7 +53,11 @@ class BasePanoramaManager(ABC):
         self.meta_data = [self.meta_data[i] for i in load_ids]
         print("Loading panoramas..")
         for meta in tqdm(self.meta_data):
-            self.panoramas.append(self.new_panorama(meta_data=meta))
+            try:
+                self.panoramas.append(self.new_panorama(meta_data=meta))
+            except HTTPError:
+                print(f"Error retrieving panorama data, skipping.")
+                print(meta)
 
     def seg_analysis(self):
         " Do segmentation analysis. "
