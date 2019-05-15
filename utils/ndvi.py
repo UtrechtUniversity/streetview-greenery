@@ -4,10 +4,12 @@ import sys
 import numpy as np
 from osgeo import gdal, osr
 
-from utils.mapping import create_map
+from utils.mapping import create_map, MapImageOverlay
 
 
-def tiff_to_array(tiff_fp):
+def tiff_to_overlay(tiff_fp, name=None):
+    if name is None:
+        name = tiff_fp
     ds = gdal.Open(tiff_fp)
     prj = ds.GetProjection()
     srs = osr.SpatialReference(wkt=prj)
@@ -23,8 +25,14 @@ def tiff_to_array(tiff_fp):
     long_grid = np.linspace(ulx, lrx, warped_ds.RasterXSize)
 #     min_green = warped_array[np.where(warped_array > -1)].min()
     min_green = -0.03
-    create_map(warped_array, lat_grid, long_grid, html_file="ndvi.html",
-               min_green=min_green, max_green=warped_array.max()+0.05)
+
+    overlay = MapImageOverlay(warped_array, lat_grid, long_grid,
+                              min_green=min_green, name=name,
+                              max_green=warped_array.max()+0.05,
+                              cmap='Greys')
+    return overlay
+#     create_map(warped_array, , html_file="ndvi.html",
+#                min_green=min_green, max_green=)
 
 
 if __name__ == "__main__":
@@ -32,4 +40,4 @@ if __name__ == "__main__":
         print("Need one argument: tiff filename")
         sys.exit()
     print(f"Reading {sys.argv[1]}")
-    tiff_to_array(sys.argv[1])
+    tiff_to_overlay(sys.argv[1])

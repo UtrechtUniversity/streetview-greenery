@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import griddata
 from pykrige.ok import OrdinaryKriging
-from utils.mapping import green_map_to_img, create_map
+from utils.mapping import green_map_to_img, create_map, MapImageOverlay
 
 
 class VegetationPercentage(object):
@@ -46,15 +46,23 @@ def plot_greenery(green_res, cmap="gist_rainbow"):
     plt.show()
 
 
-def plot_green_krige(green_res, cmap="gist_rainbow", html_file="index.html"):
-    n_grid = 200
-#     green_list = np.array(green_res['green'])
+def plot_green_krige(green_res=None, n_grid=200, cmap="gist_rainbow",
+                     overlay_fp="krige_map.json", name=None):
+    try:
+        overlay = MapImageOverlay(overlay_fp)
+        return overlay
+    except FileNotFoundError:
+        pass
+
+    if name is None:
+        name = overlay_fp
+
     lat = np.array(green_res['lat'])
     long = np.array(green_res['long'])
 
     lat_grid = np.linspace(lat.min(), lat.max(), num=n_grid)
     long_grid = np.linspace(long.min(), long.max(), num=n_grid)
-    xi, yi = np.meshgrid(long_grid, lat_grid)
+#     xi, yi = np.meshgrid(long_grid, lat_grid)
 
     green = np.zeros((len(green_res["green"]), 3))
     for i in range(len(green_res["green"])):
@@ -66,8 +74,10 @@ def plot_green_krige(green_res, cmap="gist_rainbow", html_file="index.html"):
                          variogram_model='spherical')
     z, _ = OK.execute('grid', long_grid, lat_grid, backend='loop')
 
-    create_map(z, lat_grid, long_grid, html_file, cmap)
-#     plot_grid(xi, yi, z, long, lat, cmap)
+    overlay = MapImageOverlay(z, lat_grid, long_grid, cmap=cmap, name=name)
+    overlay.save(overlay_fp)
+    return overlay
+#     create_map(z, lat_grid, long_grid)
 
 
 def plot_grid(xgrid, ygrid, zgrid, x, y, cmap):

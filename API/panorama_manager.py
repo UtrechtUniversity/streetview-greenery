@@ -14,12 +14,14 @@ class BasePanoramaManager(ABC):
     " Base class for managing a data set of panorama's. "
 
     def __init__(self, seg_model=DeepLabModel, seg_kwargs={},
-                 green_model=VegetationPercentage, green_kwargs={}):
+                 green_model=VegetationPercentage, green_kwargs={},
+                 data_id="unknown"):
         self.meta_data = []
         self.panoramas = []
         self.data_dir = "data.default"
         self.seg_model = seg_model(**seg_kwargs)
         self.green_model = green_model(**green_kwargs)
+        self.id = data_id
 
     def get(self, **request_kwargs):
         " Get meta data of the requested pictures. "
