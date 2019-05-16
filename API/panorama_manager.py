@@ -61,11 +61,11 @@ class BasePanoramaManager(ABC):
                 print(f"Error retrieving panorama data, skipping.")
                 print(meta)
 
-    def seg_analysis(self):
+    def seg_analysis(self, **kwargs):
         " Do segmentation analysis. "
         print("Doing segmentation analysis..")
         for panorama in tqdm(self.panoramas):
-            panorama.seg_analysis(seg_model=self.seg_model)
+            panorama.seg_analysis(seg_model=self.seg_model, **kwargs)
 
     def green_analysis(self):
         " Do greenery analysis. "

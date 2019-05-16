@@ -28,6 +28,12 @@ def _get_model(model_name):
 
     if model_name == "mobilenet":
         tar_file = "deeplabv3_mnv2_cityscapes_train_2018_02_05.tar.gz"
+    elif model_name == "xception_65":
+        tar_file = "deeplabv3_cityscapes_train_2018_02_06.tar.gz"
+    elif model_name == "xception_71":
+        tar_file = "deeplab_cityscapes_xception71_trainfine_2018_09_08.tar.gz"
+    elif model_name == "xception_71_slow":
+        tar_file = "deeplab_cityscapes_xception71_trainvalfine_2018_09_08.tar.gz"
     else:
         raise ValueError(f"Error: model {model_name} unknown")
 
@@ -123,7 +129,7 @@ class DeepLabModel(object):
         return results
 
 
-def plot_segmentation(image_fp, seg_map, color_map):
+def plot_segmentation(image_fp, seg_map, color_map, show=True):
     """Visualizes input image, segmentation map and overlay view."""
 
     # Resize the image to the segmentation map.
@@ -170,4 +176,5 @@ def plot_segmentation(image_fp, seg_map, color_map):
     plt.xticks([], [])
     ax.tick_params(width=0.0)
     plt.grid(False)
-    plt.show()
+    if show:
+        plt.show()

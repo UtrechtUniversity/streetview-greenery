@@ -33,9 +33,9 @@ class BasePanorama(ABC):
             self.save()
         self.log_dict = self.todict()
 
-    def seg_analysis(self, seg_model, show=False):
+    def seg_analysis(self, seg_model, show=False, recalc=False):
         model_id = seg_model.id()
-        if model_id not in self.segments or show:
+        if model_id not in self.segments or show or recalc:
             self.segments[model_id] = self.seg_run(seg_model, show)
             self.save()
 

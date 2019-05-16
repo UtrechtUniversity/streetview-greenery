@@ -47,7 +47,8 @@ def plot_greenery(green_res, cmap="gist_rainbow"):
 
 
 def plot_green_krige(green_res=None, n_grid=200, cmap="gist_rainbow",
-                     overlay_fp="krige_map.json", name=None):
+                     overlay_fp="krige_map.json", name=None,
+                     n_closest_points=None):
     try:
         overlay = MapImageOverlay(overlay_fp)
         return overlay
@@ -72,7 +73,8 @@ def plot_green_krige(green_res=None, n_grid=200, cmap="gist_rainbow",
 
     OK = OrdinaryKriging(green[:, 0], green[:, 1], green[:, 2],
                          variogram_model='spherical')
-    z, _ = OK.execute('grid', long_grid, lat_grid, backend='loop')
+    z, _ = OK.execute('grid', long_grid, lat_grid, backend='loop',
+                      n_closest_points=n_closest_points)
 
     overlay = MapImageOverlay(z, lat_grid, long_grid, cmap=cmap, name=name)
     overlay.save(overlay_fp)

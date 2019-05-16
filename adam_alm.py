@@ -3,33 +3,10 @@
 import os
 
 from API import AdamPanoramaManager
-from models import DeepLabModel
-from greenery.segment_perc import VegetationPercentage, plot_greenery,\
-    plot_green_krige
+from greenery.segment_perc import plot_green_krige
 from utils.ndvi import tiff_to_overlay
 from utils.mapping import create_map
-
-
-def select_area(area):
-    manager_kwargs = {
-        'seg_model': DeepLabModel,
-        'green_model': VegetationPercentage,
-        'data_id': area,
-    }
-    get_kwargs = {}
-    load_kwargs = {}
-
-    if area == "adam_alm":
-        load_kwargs['n_sample'] = 10000
-    elif area == "mijndenhof":
-        get_kwargs['center'] = [52.299584, 4.971973]
-        get_kwargs['radius'] = 150
-    elif area == "muiderpoort":
-        get_kwargs['center'] = [52.360224, 4.935102]
-        get_kwargs['radius'] = 400
-    else:
-        raise ValueError(f"Error: area '{area}' not defined.")
-    return (manager_kwargs, get_kwargs, load_kwargs)
+from utils.selection import select_area
 
 
 def main():
@@ -57,7 +34,7 @@ def main():
     ndvi_tiff_fp = os.path.join("ndvi", "ndvi_landsat8_2013_2017_ad.tif")
     ndvi_overlay = tiff_to_overlay(ndvi_tiff_fp)
 
-    map_fp = os.path.join("doc", panoramas.id+".html")
+    map_fp = os.path.join(panoramas.id+".html")
     create_map([krige_overlay, ndvi_overlay], map_fp)
 
 

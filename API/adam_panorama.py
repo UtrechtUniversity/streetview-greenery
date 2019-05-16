@@ -21,6 +21,7 @@ class AdamPanorama(BasePanorama):
             data_dir=data_dir,
             data_src=data_src,
         )
+        self.seg_res = None
 
     def parse(self, meta_data):
         " Get some universally used data. "
@@ -41,6 +42,7 @@ class AdamPanorama(BasePanorama):
     def seg_run(self, model, show=False):
         " Do segmentation analysis on the picture. "
         seg_res = model.run(self.panorama_fp)
+        self.seg_res = seg_res
 
         seg_map = np.array(seg_res['seg_map'])
         names = np.array(seg_res['color_map'][0])
