@@ -29,6 +29,8 @@ There is at the moment no real installation script. Just make sure you have all 
 - pykrige
 - scipy
 - tqdm
+- requests
+- gdal
 
 ## Quickstart
 
