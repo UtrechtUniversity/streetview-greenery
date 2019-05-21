@@ -13,8 +13,7 @@ def _meta_fp(panorama_fp):
 
 class AdamPanorama(BasePanorama):
     " Object for using the Amsterdam data API with equirectengular data. "
-    def __init__(self, meta_data, data_dir="data.amsterdam"):
-        data_src = "data.amsterdam"
+    def __init__(self, meta_data, data_src="data.amsterdam"):
         data_dir = os.path.join(data_src, "pics")
         super(AdamPanorama, self).__init__(
             meta_data=meta_data,

@@ -34,7 +34,7 @@ There is at the moment no real installation script. Just make sure you have all 
 
 ## Quickstart
 
-The script [__main__.py](__main__.py) is an example of how to do a simple greenery analysis.
+The script [adam_alm.py](adam_alm.py) is an example of how to do a simple greenery analysis.
 
 #### Panorama Manager
 
@@ -90,5 +90,6 @@ The function gives back a dictionary with the greenery measure, longitude and la
 The greenery can be plotted in a 2d contour plot by using either the "plot\_greenery" or "plot\_green\_krige" functions. The first uses simple linear interpolation to generate a contour plot. The second uses ordinary kriging (variogram=spherical) to get a better estimate. The latter also creates an overlay for Open Streetmap, which can be viewed by opening index.html.
 
 ```python
-plot_green_krige(green_res)
+krige_overlay = plot_green_krige(green_res)
+create_map([krige_overlay], "index.html")
 ```

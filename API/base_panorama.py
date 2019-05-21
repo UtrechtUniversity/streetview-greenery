@@ -26,6 +26,7 @@ class BasePanorama(ABC):
 
         self.fp_from_meta(meta_data)
 
+        # Try to load the meta-data + results from file.
         try:
             self.load(self.meta_fp)
         except FileNotFoundError:
@@ -34,17 +35,48 @@ class BasePanorama(ABC):
         self.log_dict = self.todict()
 
     def seg_analysis(self, seg_model, show=False, recalc=False):
+        """
+        Run a segmentation analysis on the panorama.
+
+        Arguments
+        ---------
+        seg_model: SegmentationModel
+            Instance of a segmentation model.
+        show: bool
+            Show the segmentation of the picture.
+        recalc: bool
+            Ignore the cached results.
+        """
         model_id = seg_model.id()
         if model_id not in self.segments or show or recalc:
             self.segments[model_id] = self.seg_run(seg_model, show)
             self.save()
 
     def green_analysis(self, seg_model, green_model):
+        """
+        Run a greenery analysis on the panorama and store it.
+
+        Arguments
+        ---------
+        seg_model: SegmentationModel
+            Instance of a segmentation model (DeepLabModel).
+        green_model: GreenModel
+            Instance of a greenery model (VegetationGreenery).
+
+        Returns
+        -------
+        float:
+            Greenery value.
+        """
         green_id = green_model.id()
+
+        # Run the segmentation model if not already done.
         seg_id = seg_model.id()
         if seg_id not in self.segments:
             self.seg_analysis(seg_model)
         seg_res = self.segments[seg_id]
+
+        # Run greenery analysis if not already done.
         if seg_id not in self.greenery:
             self.greenery[seg_id] = {}
         green_dict = self.greenery[seg_id]
@@ -67,6 +99,7 @@ class BasePanorama(ABC):
         self.fromdict(log_dict)
 
     def todict(self):
+        " Put data in a dictionary. "
         log_dict = {
             "data_src": self.data_src,
             "panorama_fp": self.panorama_fp,
@@ -79,6 +112,7 @@ class BasePanorama(ABC):
         return log_dict
 
     def fromdict(self, log_dict):
+        " Collect data from dictionary. "
         self.data_src = log_dict["data_src"]
         self.panorama_fp = log_dict["panorama_fp"]
         self.segments = log_dict["segments"]

@@ -1,17 +1,19 @@
-
+'''
+Manager of a set of panoramas.
+'''
 import os
 import json
 import numpy as np
 from tqdm import tqdm
 
-from models.deeplab import DeepLabModel
+from models import DeepLabModel
 from abc import ABC
-from greenery.segment_perc import VegetationPercentage
+from greenery import VegetationPercentage
 from urllib.error import HTTPError
 
 
 class BasePanoramaManager(ABC):
-    " Base class for managing a data set of panorama's. "
+    " Base class for managing a data set of panoramas. "
 
     def __init__(self, seg_model=DeepLabModel, seg_kwargs={},
                  green_model=VegetationPercentage, green_kwargs={},
@@ -42,8 +44,16 @@ class BasePanoramaManager(ABC):
         print(f"List contains {len(self.meta_data)} pictures. ")
 
     def load(self, n_sample=None):
-        " Download/read pictures. "
+        """ Download/read pictures.
+
+        Arguments
+        ---------
+        n_sample: int
+            Sample that number of pictures. If n_sample is None,
+            download/load all panorama's.
+        """
         n_panorama = len(self.meta_data)
+        # Set the seed, so that we will get the same samples each time.
         np.random.seed(1283742)
         if n_sample is None:
             load_ids = np.arange(n_panorama)
@@ -68,7 +78,14 @@ class BasePanoramaManager(ABC):
             panorama.seg_analysis(seg_model=self.seg_model, **kwargs)
 
     def green_analysis(self):
-        " Do greenery analysis. "
+        """
+        Do greenery analysis.
+
+        Returns
+        -------
+        dict:
+            Dictionary that contains greenery points at (lat,long).
+        """
         green_dict = {
             'green': [],
             'lat': [],
@@ -82,4 +99,3 @@ class BasePanoramaManager(ABC):
             green_dict["lat"].append(panorama.latitude)
             green_dict["long"].append(panorama.longitude)
         return green_dict
-

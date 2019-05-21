@@ -9,9 +9,20 @@ from tqdm import tqdm
 
 
 def _convert_meta(meta_data):
+    """ Remove some unneeded meta data and move the link.
+
+    Arguments
+    ---------
+    meta_data: dict
+        Original meta data from data.amsterdam API.
+
+    Returns
+    -------
+    dict:
+        Transformed meta data.
+    """
     all_dict = []
     for meta in meta_data:
-#         print(meta)
         new_dict = meta
         new_dict["equirectangular_url"] = new_dict["_links"][
             "equirectangular_small"]["href"]
@@ -21,7 +32,7 @@ def _convert_meta(meta_data):
 
 
 class AdamPanoramaManager(BasePanoramaManager):
-    " Object for using the Amsterdam data API"
+    " Object for using the Amsterdam data API "
 
     def __init__(self, **kwargs):
         super(AdamPanoramaManager, self).__init__(**kwargs)
@@ -29,20 +40,32 @@ class AdamPanoramaManager(BasePanoramaManager):
         self.url = "https://api.data.amsterdam.nl/panorama/panoramas/"
 
     def request_meta(self, params):
+        """ Get meta data from data.amsterdam.
+
+        Arguments
+        ---------
+        params: dict
+            Parameters to retrieve meta data (coordinates etc).
+
+        Returns
+        -------
+        list:
+            List of all meta-data.
+        """
         meta_list = []
         print("Downloading list of pictures")
         try:
             response = requests.get(self.url, params=params)
         except requests.exceptions.RequestException:
             print("HTTP request failed.")
-            print(response.status_code)
-            return None
 
         if response.status_code != 200:
-            print(f"Error (data.amsterdam): HTTP status code:"
-                  f" {response.status_code}")
-            raise ValueError("Ouch")
+            raise ValueError(
+                f"Error (data.amsterdam): HTTP status code:"
+                f" {response.status_code}"
+            )
 
+        # Try to load data into a dictionary.
         try:
             response_dict = json.loads(response.content)
         except JSONDecodeError:
@@ -52,25 +75,28 @@ class AdamPanoramaManager(BasePanoramaManager):
         new_list = _convert_meta(response_dict["_embedded"]["panoramas"])
         meta_list.extend(new_list)
         n_total = response_dict['count']
-#         print(f"Found {n_total}")
         with tqdm(total=n_total) as pbar:
+            # Start progress bar.
             pbar.update(params["page_size"])
             while response_dict['_links']['next']['href'] is not None:
                 try:
                     response = requests.get(
                         response_dict['_links']['next']['href'])
                 except requests.RequestException:
-                    print("HTTP request failed.")
-                    print(response.status_code)
-                    return None
+                    raise ValueError(
+                        f"HTTP request failed with code {response.status_code}"
+                    )
                 response_dict = json.loads(response.content)
-                new_list = _convert_meta(response_dict["_embedded"]["panoramas"])
+                new_list = _convert_meta(
+                    response_dict["_embedded"]["panoramas"])
+                # Add new meta-data to list.
                 meta_list.extend(new_list)
+                # Update progress bar.
                 pbar.update(len(response_dict["_embedded"]["panoramas"]))
-#         print(meta_list)
         return meta_list
 
     def _meta_request_file(self, params):
+        " Create metadata filename from request parameters. "
         file_name = "meta"
         if len(params) == 0:
             return "all.json"
@@ -81,6 +107,7 @@ class AdamPanoramaManager(BasePanoramaManager):
         return file_name
 
     def _request_params(self, center=None, radius=None):
+        " Parse parameters to format for data.amsterdam API. "
         params = {
             'srid': 4326,
             'page_size': 10000,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from models import DeepLabModel
-from greenery.segment_perc import VegetationPercentage, plot_green_krige
+from greenery import VegetationPercentage, create_kriged_overlay
 from API import AdamPanoramaManager
 
 
@@ -14,8 +14,7 @@ def main():
     panoramas.load()
     panoramas.seg_analysis()
     green_res = panoramas.green_analysis()
-    plot_green_krige(green_res, html_file="muiderpoort.html")
-#     plot_greenery(green_res, cmap="YlGn")
+    create_kriged_overlay(green_res, html_file="muiderpoort.html")
 
 
 if __name__ == "__main__":
