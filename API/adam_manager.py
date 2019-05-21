@@ -106,7 +106,7 @@ class AdamPanoramaManager(BasePanoramaManager):
         file_name += ".json"
         return file_name
 
-    def _request_params(self, center=None, radius=None):
+    def _request_params(self, center=None, radius=None, **kwargs):
         " Parse parameters to format for data.amsterdam API. "
         params = {
             'srid': 4326,
@@ -119,6 +119,7 @@ class AdamPanoramaManager(BasePanoramaManager):
             params['near'] = str(center[1])+","+str(center[0])
             if radius is not None:
                 params['radius'] = float(radius)
+        params.update(kwargs)
         return params
 
     def new_panorama(self, **kwargs):

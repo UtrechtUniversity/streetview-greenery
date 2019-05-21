@@ -43,7 +43,7 @@ class BasePanoramaManager(ABC):
                 json.dump(self.meta_data, f, indent=2)
         print(f"List contains {len(self.meta_data)} pictures. ")
 
-    def load(self, n_sample=None):
+    def load(self, n_sample=None, load_ids=None):
         """ Download/read pictures.
 
         Arguments
@@ -54,11 +54,14 @@ class BasePanoramaManager(ABC):
         """
         n_panorama = len(self.meta_data)
         # Set the seed, so that we will get the same samples each time.
-        np.random.seed(1283742)
-        if n_sample is None:
-            load_ids = np.arange(n_panorama)
-        else:
-            load_ids = np.random.choice(n_panorama, n_sample, replace=False)
+        if load_ids is None:
+            if n_sample is None:
+                load_ids = np.arange(n_panorama)
+            else:
+                np.random.seed(1283742)
+                load_ids = np.random.choice(
+                    n_panorama, n_sample, replace=False)
+
         dest_dir = os.path.join(self.data_dir, "pics")
         os.makedirs(dest_dir, exist_ok=True)
 
