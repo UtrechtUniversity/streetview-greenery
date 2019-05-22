@@ -8,7 +8,9 @@ def _extend_green_res(g1, g2):
 
 
 class TileManager(object):
-    def __init__(self, resolution=500, bbox=None, grid_level=1, **kwargs):
+    def __init__(self, tile_resolution=512, bbox=None, grid_level=1,
+                 n_job=1, job_id=0,
+                 **kwargs):
         NL_bbox = [
             [50.803721015, 3.31497114423],
             [53.5104033474, 7.09205325687]
@@ -23,7 +25,7 @@ class TileManager(object):
         y_end = NL_bbox[1][0]
 
         R_earth = 6356e3  # meters
-        dy_target = 180*resolution/(R_earth*pi)
+        dy_target = 180*tile_resolution/(R_earth*pi)
         dx_target = dy_target/cos(pi*(y_start+y_end)/360.0)
 
         nx = ceil((x_end-x_start)/dx_target)
@@ -38,10 +40,17 @@ class TileManager(object):
         i_min_y = floor((bbox[0][0]-y_start)/dy)
         i_max_y = ceil((bbox[1][0]-y_start)/dy)
 
+        n_tiles_x = i_max_x-i_min_x
+        n_tiles_y = i_max_y-i_min_y
+
         print(f"({i_min_x}, {i_min_y}) -> ({i_max_x}, {i_max_y})")
         self.tile_list = []
         for ix in range(i_min_x, i_max_x):
             for iy in range(i_min_y, i_max_y):
+                i_tile = ix*n_tiles_y+iy
+                if i_tile % n_job != job_id:
+                    continue
+
                 cur_bbox = [
                     [y_start+iy*dy, x_start+ix*dx],
                     [y_start+(iy+1)*dy, x_start+(ix+1)*dx]
@@ -52,6 +61,10 @@ class TileManager(object):
                 self.tile_list.append(tile)
 
         self.grid_level = grid_level
+        self.n_tiles_x = n_tiles_x
+        self.n_tiles_y = n_tiles_y
+        self.dx = dx
+        self.dy = dy
 
     def get(self, **kwargs):
         for tile in self.tile_list:
@@ -76,3 +89,8 @@ class TileManager(object):
             new_green_res = tile.green_analysis(**kwargs)
             _extend_green_res(green_res, new_green_res)
         return green_res
+
+    def resolution(self):
+        res_x = self.n_tiles_x*2**self.grid_level
+        res_y = self.n_tiles_y*2**self.grid_level
+        return [res_x, res_y]

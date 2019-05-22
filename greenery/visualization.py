@@ -43,7 +43,7 @@ def plot_greenery(green_res, cmap="gist_rainbow"):
     plt.show()
 
 
-def create_kriged_overlay(green_res=None, n_grid=200, cmap="gist_rainbow",
+def create_kriged_overlay(green_res=None, grid=[200, 200], cmap="gist_rainbow",
                           overlay_fp="krige_map.json", name=None,
                           n_closest_points=None):
     """
@@ -77,8 +77,8 @@ def create_kriged_overlay(green_res=None, n_grid=200, cmap="gist_rainbow",
     lat = np.array(green_res['lat'])
     long = np.array(green_res['long'])
 
-    lat_grid = np.linspace(lat.min(), lat.max(), num=n_grid)
-    long_grid = np.linspace(long.min(), long.max(), num=n_grid)
+    lat_grid = np.linspace(lat.min(), lat.max(), num=grid[1])
+    long_grid = np.linspace(long.min(), long.max(), num=grid[0])
 
     green = np.zeros((len(green_res["green"]), 3))
     for i in range(len(green_res["green"])):
