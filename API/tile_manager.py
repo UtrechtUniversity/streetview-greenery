@@ -1,104 +1,78 @@
-'''
-
-'''
-import os
-from math import cos, pi
-
-import numpy as np
-
-from API.adam_manager import AdamPanoramaManager
+from math import cos, pi, ceil, floor
+from API.adam_tile import AdamPanoramaTile
 
 
-class AdamPanoramaTile(AdamPanoramaManager):
-    def __init__(self, tile_name="unknown",
-                 **kwargs):
-        super(AdamPanoramaTile, self).__init__(**kwargs)
-        self.tile_name = tile_name
-        self.data_dir = os.path.join(self.data_dir, self.tile_name)
+def _extend_green_res(g1, g2):
+    for key in g1:
+        g1[key].extend(g2[key])
 
-    def get(self, bbox=[[52.45, 4.93], [52.35, 4.935]],
-            **kwargs):
-        if bbox[0][0] < bbox[1][0]:
-            t = bbox[0][0]
-            bbox[0][0] = bbox[1][0]
-            bbox[1][0] = t
 
-        if bbox[0][1] > bbox[1][1]:
-            t = bbox[0][1]
-            bbox[0][1] = bbox[1][1]
-            bbox[1][1] = t
+class TileManager(object):
+    def __init__(self, resolution=500, bbox=None, grid_level=1, **kwargs):
+        NL_bbox = [
+            [50.803721015, 3.31497114423],
+            [53.5104033474, 7.09205325687]
+        ]
 
-        bb_string = str(bbox[0][1]) + "," + str(bbox[0][0]) + "," + \
-            str(bbox[1][1]) + "," + str(bbox[1][0])
-        self.bbox = bbox
-        self.bb_string = bb_string
+        if bbox is None:
+            bbox = NL_bbox
 
-        super(AdamPanoramaTile, self).get(bbox=self.bb_string, **kwargs)
+        x_start = NL_bbox[0][1]
+        x_end = NL_bbox[1][1]
+        y_start = NL_bbox[0][0]
+        y_end = NL_bbox[1][0]
 
-    def load(self, n_sample=None, grid_level=None):
-        if grid_level is None:
-            super(AdamPanoramaTile, self).load(n_sample=n_sample)
-            return
+        R_earth = 6356e3  # meters
+        dy_target = 180*resolution/(R_earth*pi)
+        dx_target = dy_target/cos(pi*(y_start+y_end)/360.0)
 
-        nx = 2**grid_level
-        ny = 2**grid_level
-        x_start = self.bbox[0][1]
-        x_end = self.bbox[1][1]
-        y_start = self.bbox[1][0]
-        y_end = self.bbox[0][0]
+        nx = ceil((x_end-x_start)/dx_target)
+        ny = ceil((y_end-y_start)/dy_target)
 
-#         R_earth = 6356e3  # meters
-#         dy_target = 180*resolution/(R_earth*pi)
-#         dx_target = dy_target/cos(y_start)
-
-#         nx = ceil((x_end-x_start)/dx_target)
-#         ny = ceil((y_end-y_start)/dy_target)
         dx = (x_end-x_start)/nx
         dy = (y_end-y_start)/ny
 
-#         print(nx)
-#         print(ny)
-        print(f"Target resolution: {pi*dy/180*6356e3} m")
+        i_min_x = floor((bbox[0][1]-x_start)/dx)
+        i_max_x = ceil((bbox[1][1]-x_start)/dx)
 
-        sample_list = [[] for i in range(nx)]
-        for i in range(nx):
-            sample_list[i] = [[] for i in range(ny)]
+        i_min_y = floor((bbox[0][0]-y_start)/dy)
+        i_max_y = ceil((bbox[1][0]-y_start)/dy)
 
-        for i, meta in enumerate(self.meta_data):
-            x = meta["geometry"]["coordinates"][0]
-            y = meta["geometry"]["coordinates"][1]
-            ix = int((x-x_start)/dx)
-            iy = int((y-y_start)/dy)
-#             print(ix, iy, x, y)
-#             print(x, y)
-            try:
-                sample_list[ix][iy].append(i)
-            except IndexError:
-                pass
+        print(f"({i_min_x}, {i_min_y}) -> ({i_max_x}, {i_max_y})")
+        self.tile_list = []
+        for ix in range(i_min_x, i_max_x):
+            for iy in range(i_min_y, i_max_y):
+                cur_bbox = [
+                    [y_start+iy*dy, x_start+ix*dx],
+                    [y_start+(iy+1)*dy, x_start+(ix+1)*dx]
+                ]
+                tile_name = f"NL_tile_{iy}_{ix}"
+                tile = AdamPanoramaTile(tile_name=tile_name, bbox=cur_bbox,
+                                        **kwargs)
+                self.tile_list.append(tile)
 
-#         print(sample_list)
-        load_ids = []
-        for ix in range(nx):
-            for iy in range(ny):
-                cur_list = sample_list[ix][iy]
-                if not len(cur_list):
-                    continue
-                min_dist = 10.0**10
-                idx_min = -1
-                x_base = x_start + dx*ix
-                y_base = y_start + dy*iy
-#                 print(y_base, x_base)
-                x_fac = 1/cos(x_base)
-                for i_meta in cur_list:
-                    meta = self.meta_data[i_meta]
-                    x = meta["geometry"]["coordinates"][0]
-                    y = meta["geometry"]["coordinates"][1]
-                    dist = ((x-x_base)*x_fac)**2 + (y-y_base)**2
-#                     print(dist)
-                    if dist < min_dist:
-                        idx_min = i_meta
-                        min_dist = dist
+        self.grid_level = grid_level
 
-                load_ids.append(idx_min)
-        load_ids = np.array(load_ids)
-        super(AdamPanoramaTile, self).load(load_ids=load_ids)
+    def get(self, **kwargs):
+        for tile in self.tile_list:
+            tile.get(**kwargs)
+
+    def load(self, **kwargs):
+        for tile in self.tile_list:
+            tile.load(grid_level=self.grid_level, **kwargs)
+
+    def seg_analysis(self, **kwargs):
+        for tile in self.tile_list:
+            tile.seg_analysis(**kwargs)
+
+    def green_analysis(self, **kwargs):
+        green_res = {
+            "green": [],
+            "lat": [],
+            "long": [],
+        }
+
+        for tile in self.tile_list:
+            new_green_res = tile.green_analysis(**kwargs)
+            _extend_green_res(green_res, new_green_res)
+        return green_res
