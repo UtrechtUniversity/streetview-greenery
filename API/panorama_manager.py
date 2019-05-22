@@ -17,10 +17,10 @@ class BasePanoramaManager(ABC):
 
     def __init__(self, seg_model=DeepLabModel, seg_kwargs={},
                  green_model=VegetationPercentage, green_kwargs={},
-                 data_id="unknown"):
+                 data_id="unknown", data_dir="data.default"):
         self.meta_data = []
         self.panoramas = []
-        self.data_dir = "data.default"
+        self.data_dir = data_dir
         self.seg_model = seg_model(**seg_kwargs)
         self.green_model = green_model(**green_kwargs)
         self.id = data_id
@@ -69,7 +69,8 @@ class BasePanoramaManager(ABC):
         print("Loading panoramas..")
         for meta in tqdm(self.meta_data):
             try:
-                self.panoramas.append(self.new_panorama(meta_data=meta))
+                self.panoramas.append(self.new_panorama(
+                    meta_data=meta, data_dir=dest_dir))
             except HTTPError:
                 print(f"Error retrieving panorama data, skipping.")
                 print(meta)

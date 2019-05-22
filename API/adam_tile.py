@@ -14,7 +14,8 @@ from API.adam_manager import AdamPanoramaManager
 
 class AdamPanoramaTile(AdamPanoramaManager):
     def __init__(self, tile_name="unknown",
-                 bbox=[[52.35, 4.93], [52.45, 4.935]], **kwargs):
+                 bbox=[[52.35, 4.93], [52.45, 4.935]],
+                 **kwargs):
         super(AdamPanoramaTile, self).__init__(**kwargs)
         self.tile_name = tile_name
         self.data_dir = os.path.join(self.data_dir, self.tile_name)

@@ -43,7 +43,6 @@ class TileManager(object):
         n_tiles_x = i_max_x-i_min_x
         n_tiles_y = i_max_y-i_min_y
 
-        print(f"({i_min_x}, {i_min_y}) -> ({i_max_x}, {i_max_y})")
         self.tile_list = []
         for ix in range(i_min_x, i_max_x):
             for iy in range(i_min_y, i_max_y):

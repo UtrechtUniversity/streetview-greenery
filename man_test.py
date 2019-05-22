@@ -16,13 +16,13 @@ bbox = [
     [52.363, 4.931],
 ]
 
-grid_level = 4
+grid_level = 0
 res_mult = 2
 
 tile_man = TileManager(seg_model=DeepLabModel,
                        green_model=VegetationPercentage,
                        bbox=bbox, grid_level=grid_level,
-                       n_job=2, job_id=1)
+                       n_job=1, job_id=0)
 tile_man.get()
 tile_man.load()
 tile_man.seg_analysis()

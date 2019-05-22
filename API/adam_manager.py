@@ -34,9 +34,8 @@ def _convert_meta(meta_data):
 class AdamPanoramaManager(BasePanoramaManager):
     " Object for using the Amsterdam data API "
 
-    def __init__(self, **kwargs):
-        super(AdamPanoramaManager, self).__init__(**kwargs)
-        self.data_dir = "data.amsterdam"
+    def __init__(self, data_dir="data.amsterdam", **kwargs):
+        super(AdamPanoramaManager, self).__init__(data_dir=data_dir, **kwargs)
         self.url = "https://api.data.amsterdam.nl/panorama/panoramas/"
 
     def request_meta(self, params):
