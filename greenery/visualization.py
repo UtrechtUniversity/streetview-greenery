@@ -65,11 +65,11 @@ def create_kriged_overlay(green_res=None, grid=[200, 200], cmap="gist_rainbow",
         Used in kriging procedure to limit memory/compute time.
     """
     # Load overlay from file if available.
-    try:
-        overlay = MapImageOverlay(overlay_fp)
-        return overlay
-    except FileNotFoundError:
-        pass
+#     try:
+#         overlay = MapImageOverlay(overlay_fp)
+#         return overlay
+#     except FileNotFoundError:
+#         pass
 
     if name is None:
         name = overlay_fp
@@ -91,7 +91,10 @@ def create_kriged_overlay(green_res=None, grid=[200, 200], cmap="gist_rainbow",
     z, _ = OK.execute('grid', long_grid, lat_grid, backend='loop',
                       n_closest_points=n_closest_points)
 
-    overlay = MapImageOverlay(z, lat_grid, long_grid, cmap=cmap, name=name)
+    alpha_map = _alpha_from_coordinates(lat, long, grid)
+#     print(alpha_map.tolist())
+    overlay = MapImageOverlay(z, alpha_map=alpha_map, lat_grid=lat_grid, long_grid=long_grid,
+                              cmap=cmap, name=name)
     overlay.save(overlay_fp)
     return overlay
 
@@ -107,3 +110,50 @@ def _plot_grid(xgrid, ygrid, zgrid, x, y, cmap):
     plt.ylabel('lattitude', fontsize=16)
     plt.colorbar()
     plt.show()
+
+
+def _alpha(dist, min_dist, max_dist):
+    if dist <= min_dist:
+        return 1
+    return (max_dist-dist)/(max_dist-min_dist)
+
+
+def _alpha_from_coordinates(lat, long, grid, min_dist=1, max_dist=6):
+    lat_min = lat.min()
+    lat_max = lat.max() + len(lat)*np.finfo(float).eps
+    long_min = long.min()
+    long_max = long.max() + len(lat)*np.finfo(float).eps
+    n_lat = grid[1]
+    n_long = grid[0]
+    d_lat = (lat_max-lat_min)/n_lat
+    d_long = (long_max-long_min)/n_long
+
+    dist_graph = np.zeros((n_lat, n_long))
+
+    for i_sample in range(len(lat)):
+        i_lat = int((lat[i_sample]-lat_min)/d_lat)
+        i_long = int((long[i_sample]-long_min)/d_long)
+        dist_graph[i_lat][i_long] = 1
+    for i_dist in range(max_dist):
+        alpha = _alpha(i_dist, min_dist, max_dist)
+        new_graph = np.zeros(dist_graph.shape)
+        for i_lat in range(n_lat):
+            for i_long in range(n_long):
+                if dist_graph[i_lat][i_long]:
+                    continue
+                # South
+                if i_lat and dist_graph[i_lat-1][i_long]:
+                    new_graph[i_lat][i_long] = alpha
+#                     print(dist_graph[i_lat-1][i_long], i_lat-1, i_long)
+                # West
+                elif i_long and dist_graph[i_lat][i_long-1]:
+                    new_graph[i_lat][i_long] = alpha
+                # North
+                elif i_lat+1 < n_lat and dist_graph[i_lat+1][i_long]:
+                    new_graph[i_lat][i_long] = alpha
+                # East
+                elif i_long+1 < n_long and dist_graph[i_lat][i_long+1]:
+                    new_graph[i_lat][i_long] = alpha
+        dist_graph = dist_graph + new_graph
+    return dist_graph
+

@@ -18,7 +18,7 @@ class AdamPanoramaTile(AdamPanoramaManager):
                  **kwargs):
         super(AdamPanoramaTile, self).__init__(**kwargs)
         self.tile_name = tile_name
-        self.data_dir = os.path.join(self.data_dir, self.tile_name)
+        self.data_dir = os.path.join(self.data_dir, "tiles", self.tile_name)
 
         # Use southwest - northeast bounding box definition.
         if bbox[0][0] > bbox[1][0]:

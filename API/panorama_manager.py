@@ -5,6 +5,7 @@ import os
 import json
 import numpy as np
 from tqdm import tqdm
+import inspect
 
 from models import DeepLabModel
 from abc import ABC
@@ -21,8 +22,19 @@ class BasePanoramaManager(ABC):
         self.meta_data = []
         self.panoramas = []
         self.data_dir = data_dir
-        self.seg_model = seg_model(**seg_kwargs)
-        self.green_model = green_model(**green_kwargs)
+
+        # seg_model can be an instance or the class itself.
+        # Initialize a new object, if a class was passed.
+        if inspect.isclass(seg_model):
+            self.seg_model = seg_model(**seg_kwargs)
+        else:
+            self.seg_model = seg_model
+
+        if inspect.isclass(green_model):
+            self.green_model = green_model(**green_kwargs)
+        else:
+            self.green_model = green_model
+
         self.id = data_id
 
     def get(self, **request_kwargs):
@@ -37,11 +49,13 @@ class BasePanoramaManager(ABC):
                 self.meta_data = json.load(f)
         else:
             self.meta_data = self.request_meta(params)
+            if len(self.meta_data) == 0:
+                return
+
             if not os.path.exists(self.data_dir):
                 os.makedirs(self.data_dir, exist_ok=True)
             with open(meta_fp, "w") as f:
                 json.dump(self.meta_data, f, indent=2)
-        print(f"List contains {len(self.meta_data)} pictures. ")
 
     def load(self, n_sample=None, load_ids=None):
         """ Download/read pictures.
@@ -61,6 +75,9 @@ class BasePanoramaManager(ABC):
                 np.random.seed(1283742)
                 load_ids = np.random.choice(
                     n_panorama, n_sample, replace=False)
+
+        if len(load_ids) == 0:
+            return
 
         dest_dir = os.path.join(self.data_dir, "pics")
         os.makedirs(dest_dir, exist_ok=True)

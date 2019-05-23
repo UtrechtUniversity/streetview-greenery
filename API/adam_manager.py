@@ -52,7 +52,7 @@ class AdamPanoramaManager(BasePanoramaManager):
             List of all meta-data.
         """
         meta_list = []
-        print("Downloading list of pictures")
+
         try:
             response = requests.get(self.url, params=params)
         except requests.exceptions.RequestException:
@@ -73,25 +73,20 @@ class AdamPanoramaManager(BasePanoramaManager):
 
         new_list = _convert_meta(response_dict["_embedded"]["panoramas"])
         meta_list.extend(new_list)
-        n_total = response_dict['count']
-        with tqdm(total=n_total) as pbar:
-            # Start progress bar.
-            pbar.update(params["page_size"])
-            while response_dict['_links']['next']['href'] is not None:
-                try:
-                    response = requests.get(
-                        response_dict['_links']['next']['href'])
-                except requests.RequestException:
-                    raise ValueError(
-                        f"HTTP request failed with code {response.status_code}"
-                    )
-                response_dict = json.loads(response.content)
-                new_list = _convert_meta(
-                    response_dict["_embedded"]["panoramas"])
-                # Add new meta-data to list.
-                meta_list.extend(new_list)
-                # Update progress bar.
-                pbar.update(len(response_dict["_embedded"]["panoramas"]))
+
+        while response_dict['_links']['next']['href'] is not None:
+            try:
+                response = requests.get(
+                    response_dict['_links']['next']['href'])
+            except requests.RequestException:
+                raise ValueError(
+                    f"HTTP request failed with code {response.status_code}"
+                )
+            response_dict = json.loads(response.content)
+            new_list = _convert_meta(
+                response_dict["_embedded"]["panoramas"])
+            # Add new meta-data to list.
+            meta_list.extend(new_list)
         return meta_list
 
     def _meta_request_file(self, params):
