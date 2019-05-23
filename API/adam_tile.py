@@ -92,11 +92,8 @@ class AdamPanoramaTile(AdamPanoramaManager):
             y = meta["geometry"]["coordinates"][1]
             ix = int((x-x_start)/dx)
             iy = int((y-y_start)/dy)
-            try:
+            if ix >= 0 and ix < nx and iy >= 0 and iy < ny:
                 sample_list[ix][iy].append(i)
-            except IndexError:
-                # Some are actually outside the tile, ignore them.
-                pass
 
         # Go through all the mini tiles and select the ones closest to
         # the corner of their mini tile.
