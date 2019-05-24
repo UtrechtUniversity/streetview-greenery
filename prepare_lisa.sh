@@ -8,7 +8,11 @@ fi
 COMMAND_FILE="temp_commands.txt"
 PRE_FILE="temp_pre.txt"
 CONFIG_FILE="prepare_lisa.ini"
-echo "cd `pwd`" > $PRE_FILE
+
+cat > $PRE_FILE << EOF_CAT
+cd `pwd`
+source hpc/module_load.sh
+EOF_CAT
 
 rm -f $COMMAND_FILE
 

@@ -57,7 +57,7 @@ class TileManager(object):
 
         data_dir = os.path.join("data.amsterdam", "tiles")
         self.empty_fp = os.path.join(data_dir,
-                                     f"empty_tiles_{tile_resolution}m")
+                                     f"empty_tiles_{tile_resolution}m.json")
         try:
             with open(self.empty_fp, "r") as f:
                 self.empty_tiles = json.load(f)
