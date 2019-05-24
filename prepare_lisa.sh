@@ -21,8 +21,6 @@ for JOB in `seq 0 $NJOB_MAX`; do
     echo "\${python} ./streetgreen --prepare amsterdam_almere --njobs $N_JOBS --jobid $JOB -l 2" >> $COMMAND_FILE
 done
 
-cat $COMMAND_FILE
-
 batchgen -f $COMMAND_FILE $CONFIG_FILE -pre $PRE_FILE
 
 rm -f $COMMAND_FILE $PRE_FILE
