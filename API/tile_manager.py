@@ -1,10 +1,12 @@
 import os
 import json
 from math import cos, pi, ceil, floor
+
+from tqdm import tqdm
+
 from API.adam_tile import AdamPanoramaTile
 from models.deeplab import DeepLabModel
 from greenery.greenery import VegetationPercentage
-from tqdm import tqdm
 
 
 def _extend_green_res(g1, g2):
@@ -54,7 +56,8 @@ class TileManager(object):
         self.green_model = green_model(**green_kwargs)
 
         data_dir = os.path.join("data.amsterdam", "tiles")
-        self.empty_fp = os.path.join(data_dir, f"empty_tiles_{tile_resolution}m")
+        self.empty_fp = os.path.join(data_dir,
+                                     f"empty_tiles_{tile_resolution}m")
         try:
             with open(self.empty_fp, "r") as f:
                 self.empty_tiles = json.load(f)

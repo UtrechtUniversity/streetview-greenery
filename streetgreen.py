@@ -69,22 +69,29 @@ def argument_parser():
         dest="grid_level",
         default=0,
         help="Set the detail of the grid, starting from 0 at a resolution of"
-             " 1 per 500 m, doubling the resolution by a factor of 2 for each"
+             " 1 per km, doubling the resolution by a factor of 2 for each"
              " level."
     )
     parser.add_argument(
         "--skip-overlay",
-        type=bool,
         default=False,
         dest="skip_overlay",
-        help="Flag: do not create a kriged overlayed map."
+        action='store_true',
+        help="Do not create a kriged overlayed map."
+    )
+    parser.add_argument(
+        "--prepare",
+        default=False,
+        dest="prepare_only",
+        action="store_true",
+        help="Only prepare the data, do not compute anything."
     )
     return parser
 
 
 def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation_perc',
                 n_job=1, job_id=0, bbox_str='amsterdam', grid_level=0,
-                skip_overlay=False):
+                skip_overlay=False, prepare_only=False):
     bbox = select_bbox(bbox_str)
     seg_kwargs = select_seg_model(model)
     green_kwargs = select_green_model(greenery_measure)
@@ -93,6 +100,10 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation_perc',
                            job_id=job_id, **seg_kwargs, **green_kwargs)
     tile_man.get()
     tile_man.load()
+
+    if prepare_only:
+        return
+
     tile_man.seg_analysis()
     green_res = tile_man.green_analysis()
 

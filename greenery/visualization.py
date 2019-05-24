@@ -5,7 +5,9 @@ Visualization of greenery measures.
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import griddata
+
 from pykrige.ok import OrdinaryKriging
+
 from utils.mapping import MapImageOverlay
 
 
@@ -120,9 +122,9 @@ def _alpha(dist, min_dist, max_dist):
 
 def _alpha_from_coordinates(lat, long, grid, min_dist=1, max_dist=6):
     lat_min = lat.min()
-    lat_max = lat.max() + len(lat)*np.finfo(float).eps
+    lat_max = lat.max() + 10*len(lat)*np.finfo(float).eps
     long_min = long.min()
-    long_max = long.max() + len(lat)*np.finfo(float).eps
+    long_max = long.max() + 10*len(lat)*np.finfo(float).eps
     n_lat = grid[1]
     n_long = grid[0]
     d_lat = (lat_max-lat_min)/n_lat

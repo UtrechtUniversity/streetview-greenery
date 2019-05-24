@@ -3,12 +3,11 @@
 import os
 
 from models import DeepLabModel
-from greenery import VegetationPercentage
+from greenery import VegetationPercentage, create_kriged_overlay
 from API.tile_manager import TileManager
 from greenery.visualization import plot_greenery
 from utils.mapping import create_map
 from utils.ndvi import tiff_to_overlay
-from greenery import create_kriged_overlay
 
 
 bbox = [
