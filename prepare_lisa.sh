@@ -11,7 +11,7 @@ CONFIG_FILE="prepare_lisa.ini"
 
 cat > $PRE_FILE << EOF_CAT
 cd `pwd`
-source hpc/module_load.sh
+source hpc/module_load_cpu.sh
 EOF_CAT
 
 rm -f $COMMAND_FILE

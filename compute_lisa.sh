@@ -13,7 +13,7 @@ cat > $PRE_FILE << EOF_CAT
 #SBATCH -p gpu_shared
 #SBATCH -n 3
 cd `pwd`
-source hpc/module_load.sh
+source hpc/module_load_gpu.sh
 EOF_CAT
 
 rm -f $COMMAND_FILE
