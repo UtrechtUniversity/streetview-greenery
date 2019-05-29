@@ -46,7 +46,7 @@ def select_bbox(area="amsterdam"):
         ]
     elif area == "almere":
         bbox = [
-            [52.299, 5.079]
+            [52.299, 5.079],
             [52.445, 5.374],
         ]
     elif area == "oosterpark":

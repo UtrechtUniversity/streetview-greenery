@@ -11,6 +11,7 @@ import json
 import numpy as np
 
 from API.adam_manager import AdamPanoramaManager
+from utils import _empty_green_res
 
 
 class AdamPanoramaTile(AdamPanoramaManager):
@@ -126,8 +127,8 @@ class AdamPanoramaTile(AdamPanoramaManager):
         load_ids = np.array(load_ids)
         super(AdamPanoramaTile, self).load(load_ids=load_ids)
 
-    def green_direct(self, get_kwargs={}, load_kwargs={}, seg_kwargs={},
-                     green_kwargs={}):
+    def green_direct(self, prepare_only=False, get_kwargs={}, load_kwargs={},
+                     seg_kwargs={}, green_kwargs={}):
         green_fp = os.path.join(self.data_dir, "green_res.json")
         seg_id = self.seg_model.id()
         green_id = self.green_model.id()
@@ -143,6 +144,8 @@ class AdamPanoramaTile(AdamPanoramaManager):
                 green_dict[seg_id][green_id] = {}
             self.get(**get_kwargs)
             self.load(**load_kwargs)
+            if prepare_only:
+                return _empty_green_res()
             self.seg_analysis(**seg_kwargs)
             new_green_res = self.green_analysis(**green_kwargs)
             green_dict[seg_id][green_id] = new_green_res

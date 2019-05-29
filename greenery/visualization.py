@@ -134,15 +134,54 @@ def _alpha(dist, min_dist, max_dist):
     return (max_dist-dist)/(max_dist-min_dist)
 
 
-def _alpha_from_coordinates(lat, long, grid, min_dist=1, max_dist=6):
-    lat_min = lat.min()
-    lat_max = lat.max() + 10*len(lat)*np.finfo(float).eps
-    long_min = long.min()
-    long_max = long.max() + 10*len(lat)*np.finfo(float).eps
-    n_lat = grid[1]
-    n_long = grid[0]
-    d_lat = (lat_max-lat_min)/n_lat
-    d_long = (long_max-long_min)/n_long
+# def _alpha_from_coordinates(lat, long, grid, min_dist=1, max_dist=6):
+#     lat_min = lat.min()
+#     lat_max = lat.max() + 10*len(lat)*np.finfo(float).eps
+#     long_min = long.min()
+#     long_max = long.max() + 10*len(lat)*np.finfo(float).eps
+#     n_lat = grid[1]
+#     n_long = grid[0]
+#     d_lat = (lat_max-lat_min)/n_lat
+#     d_long = (long_max-long_min)/n_long
+# 
+#     dist_graph = np.zeros((n_lat, n_long))
+# 
+#     for i_sample in range(len(lat)):
+#         i_lat = int((lat[i_sample]-lat_min)/d_lat)
+#         i_long = int((long[i_sample]-long_min)/d_long)
+#         dist_graph[i_lat][i_long] = 1
+#     for i_dist in range(max_dist):
+#         alpha = _alpha(i_dist, min_dist, max_dist)
+#         new_graph = np.zeros(dist_graph.shape)
+#         for i_lat in range(n_lat):
+#             for i_long in range(n_long):
+#                 if dist_graph[i_lat][i_long]:
+#                     continue
+#                 # South
+#                 if i_lat and dist_graph[i_lat-1][i_long]:
+#                     new_graph[i_lat][i_long] = alpha
+#                 # West
+#                 elif i_long and dist_graph[i_lat][i_long-1]:
+#                     new_graph[i_lat][i_long] = alpha
+#                 # North
+#                 elif i_lat+1 < n_lat and dist_graph[i_lat+1][i_long]:
+#                     new_graph[i_lat][i_long] = alpha
+#                 # East
+#                 elif i_long+1 < n_long and dist_graph[i_lat][i_long+1]:
+#                     new_graph[i_lat][i_long] = alpha
+#         dist_graph = dist_graph + new_graph
+#     return dist_graph
+
+
+def _alpha_from_coordinates(green_res, lat_grid, long_grid, min_dist=1, max_dist=6):
+    lat = green_res['lat']
+    long = green_res['long']
+    lat_min = lat_grid.min()
+    long_min = long_grid.min()
+    n_lat = lat_grid.size
+    n_long = long_grid.size
+    d_lat = lat_grid[1]-lat_grid[0]
+    d_long = long_grid[1]-long_grid[0]
 
     dist_graph = np.zeros((n_lat, n_long))
 
@@ -171,4 +210,5 @@ def _alpha_from_coordinates(lat, long, grid, min_dist=1, max_dist=6):
                     new_graph[i_lat][i_long] = alpha
         dist_graph = dist_graph + new_graph
     return dist_graph
+
 

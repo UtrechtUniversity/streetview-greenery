@@ -2,7 +2,6 @@
 
 import folium
 import numpy as np
-from PIL import Image
 import json
 from json.decoder import JSONDecodeError
 
@@ -10,7 +9,7 @@ from json.decoder import JSONDecodeError
 class MapImageOverlay:
     "Overlay that can be plotted over a street map. Assumes WGS 84."
     def __init__(self, greenery, lat_grid=None, long_grid=None, alpha_map=None,
-                 min_green=0.0, max_green=0.7, cmap="gist_rainbow", name=None):
+                 min_green=0.0, max_green=0.75, cmap="gist_rainbow", name=None):
         if isinstance(greenery, str):
             self.load(greenery)
         else:
@@ -122,3 +121,18 @@ def create_map(green_layers, html_file="index.html"):
         ).add_to(m)
     folium.LayerControl().add_to(m)
     m.save(html_file)
+
+
+def _empty_green_res():
+    green_res = {
+        "green": [],
+        "lat": [],
+        "long": [],
+    }
+    return green_res
+
+
+def _extend_green_res(g1, g2):
+    if "green" in g2 and "green" in g1:
+        for key in g1:
+            g1[key].extend(g2[key])
