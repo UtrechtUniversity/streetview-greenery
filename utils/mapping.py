@@ -9,7 +9,7 @@ from json.decoder import JSONDecodeError
 
 class MapImageOverlay:
     "Overlay that can be plotted over a street map. Assumes WGS 84."
-    def __init__(self, greenery, alpha_map=None, lat_grid=None, long_grid=None,
+    def __init__(self, greenery, lat_grid=None, long_grid=None, alpha_map=None,
                  min_green=0.0, max_green=0.7, cmap="gist_rainbow", name=None):
         if isinstance(greenery, str):
             self.load(greenery)
@@ -92,7 +92,6 @@ def green_map_to_img(green_i, alpha_i, min_green, max_green, cmap="gist_rainbow"
                 if alpha_i is not None:
                     alpha = alpha_i[irow][icol]
                     green_rgba[nx-irow-1][icol][3] = 255*alpha
-#                     print(green_rgba[nx-irow-1][icol])
 
     return green_rgba
 

@@ -25,4 +25,6 @@ done
 
 batchgen -f $COMMAND_FILE $CONFIG_FILE -pre $PRE_FILE
 
+sed -i '/#SBATCH --tasks-per-node=12/d' batch.slurm_lisa/sv_compute/batch*
+
 rm -f $COMMAND_FILE $PRE_FILE

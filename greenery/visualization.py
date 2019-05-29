@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import griddata
 
-from pykrige.ok import OrdinaryKriging
+from pykrige import OrdinaryKriging
 
 from utils.mapping import MapImageOverlay
 
@@ -45,7 +45,7 @@ def plot_greenery(green_res, cmap="gist_rainbow"):
     plt.show()
 
 
-def create_kriged_overlay(green_res=None, grid=[200, 200], cmap="gist_rainbow",
+def create_kriged_overlay(green_res, grid=[200, 200], cmap="gist_rainbow",
                           overlay_fp="krige_map.json", name=None,
                           n_closest_points=None):
     """
@@ -66,7 +66,7 @@ def create_kriged_overlay(green_res=None, grid=[200, 200], cmap="gist_rainbow",
     n_closest_points: int
         Used in kriging procedure to limit memory/compute time.
     """
-    # Load overlay from file if available.
+#     Load overlay from file if available.
 #     try:
 #         overlay = MapImageOverlay(overlay_fp)
 #         return overlay
@@ -94,11 +94,25 @@ def create_kriged_overlay(green_res=None, grid=[200, 200], cmap="gist_rainbow",
                       n_closest_points=n_closest_points)
 
     alpha_map = _alpha_from_coordinates(lat, long, grid)
-#     print(alpha_map.tolist())
-    overlay = MapImageOverlay(z, alpha_map=alpha_map, lat_grid=lat_grid, long_grid=long_grid,
+    overlay = MapImageOverlay(z, lat_grid=lat_grid, long_grid=long_grid,
+                              alpha_map=alpha_map,
                               cmap=cmap, name=name)
     overlay.save(overlay_fp)
     return overlay
+
+
+def krige_greenery(green_res, lat_grid, long_grid, **kwargs):
+    green = np.zeros((len(green_res["green"]), 3))
+    for i in range(len(green_res["green"])):
+        green[i][0] = green_res["long"][i]
+        green[i][1] = green_res["lat"][i]
+        green[i][2] = green_res["green"][i]
+
+    OK = OrdinaryKriging(green[:, 0], green[:, 1], green[:, 2],
+                         variogram_model='spherical')
+    z, _ = OK.execute('grid', long_grid, lat_grid, backend='loop',
+                      **kwargs)
+    return z
 
 
 def _plot_grid(xgrid, ygrid, zgrid, x, y, cmap):
@@ -146,7 +160,6 @@ def _alpha_from_coordinates(lat, long, grid, min_dist=1, max_dist=6):
                 # South
                 if i_lat and dist_graph[i_lat-1][i_long]:
                     new_graph[i_lat][i_long] = alpha
-#                     print(dist_graph[i_lat-1][i_long], i_lat-1, i_long)
                 # West
                 elif i_long and dist_graph[i_lat][i_long-1]:
                     new_graph[i_lat][i_long] = alpha

@@ -98,21 +98,25 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation_perc',
 
     tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
                            job_id=job_id, **seg_kwargs, **green_kwargs)
-    tile_man.get()
-    tile_man.load()
+#     tile_man.get()
+#     tile_man.load()
 
-    if prepare_only:
-        return
+#     if prepare_only:
+#         return
 
-    tile_man.seg_analysis()
-    green_res = tile_man.green_analysis()
+#     tile_man.seg_analysis()
+#     green_res = tile_man.green_analysis()
 
+    green_res_file = "krige_{bbox_str}_level={grid_level}.json"
+    green_res = tile_man.green_direct()
+    
     if skip_overlay:
         return
 
     overlay_dir = os.path.join("data.amsterdam", "maps")
     overlay_file = f"krige_{bbox_str}_level={grid_level}.json"
     overlay_fp = os.path.join(overlay_dir, overlay_file)
+    print(overlay_fp)
     os.makedirs(overlay_dir, exist_ok=True)
 
     res_mult = 2
@@ -120,7 +124,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation_perc',
     resolution = [res_mult*x for x in resolution]
 
     overlay = create_kriged_overlay(green_res, overlay_fp=overlay_fp,
-                                    grid=resolution)
+                                    grid=resolution, n_closest_points=300)
     create_map([overlay], html_file=splitext(overlay_fp)[0]+".html")
 #     plot_greenery(green_res)
 

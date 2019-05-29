@@ -57,7 +57,7 @@ class BasePanoramaManager(ABC):
             with open(meta_fp, "w") as f:
                 json.dump(self.meta_data, f, indent=2)
 
-    def load(self, n_sample=None, load_ids=None):
+    def load(self, n_sample=None, load_ids=None, pbar=None):
         """ Download/read pictures.
 
         Arguments
@@ -83,22 +83,26 @@ class BasePanoramaManager(ABC):
         os.makedirs(dest_dir, exist_ok=True)
 
         self.meta_data = [self.meta_data[i] for i in load_ids]
-        print("Loading panoramas..")
-        for meta in tqdm(self.meta_data):
+#         print("Loading panoramas..")
+        for meta in self.meta_data:
             try:
                 self.panoramas.append(self.new_panorama(
                     meta_data=meta, data_dir=dest_dir))
             except HTTPError:
                 print(f"Error retrieving panorama data, skipping.")
                 print(meta)
+            if pbar is not None:
+                pbar.update()
 
-    def seg_analysis(self, **kwargs):
+    def seg_analysis(self, pbar=None, **kwargs):
         " Do segmentation analysis. "
-        print("Doing segmentation analysis..")
-        for panorama in tqdm(self.panoramas):
+#         print("Doing segmentation analysis..")
+        for panorama in self.panoramas:
             panorama.seg_analysis(seg_model=self.seg_model, **kwargs)
+            if pbar is not None:
+                pbar.update()
 
-    def green_analysis(self):
+    def green_analysis(self, pbar=None):
         """
         Do greenery analysis.
 
@@ -112,11 +116,13 @@ class BasePanoramaManager(ABC):
             'lat': [],
             'long': [],
         }
-        print("Doing greenery analysis..")
-        for panorama in tqdm(self.panoramas):
+#         print("Doing greenery analysis..")
+        for panorama in self.panoramas:
             green_frac = panorama.green_analysis(seg_model=self.seg_model,
                                                  green_model=self.green_model)
             green_dict["green"].append(green_frac)
             green_dict["lat"].append(panorama.latitude)
             green_dict["long"].append(panorama.longitude)
+            if pbar is not None:
+                pbar.update()
         return green_dict

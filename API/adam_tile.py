@@ -6,6 +6,7 @@ tiles instead of circles.
 
 import os
 from math import cos, pi
+import json
 
 import numpy as np
 
@@ -77,7 +78,7 @@ class AdamPanoramaTile(AdamPanoramaManager):
             R_earth = 6356e3  # meters]
             yres = pi*dy/180*R_earth
             xres = pi*dx*cos(pi*y_start/180.0)/180*R_earth
-            print(f"Target resolution: {xres:.2f}x{yres:.2f} m")
+#             print(f"Target resolution: {xres:.2f}x{yres:.2f} m")
 
         # Sample list is a three dimensional list that contains all panoramas
         # belonging to the mini tile. The mini tiles are aranged as
@@ -124,3 +125,27 @@ class AdamPanoramaTile(AdamPanoramaManager):
 
         load_ids = np.array(load_ids)
         super(AdamPanoramaTile, self).load(load_ids=load_ids)
+
+    def green_direct(self, get_kwargs={}, load_kwargs={}, seg_kwargs={},
+                     green_kwargs={}):
+        green_fp = os.path.join(self.data_dir, "green_res.json")
+        seg_id = self.seg_model.id()
+        green_id = self.green_model.id()
+        green_dict = {}
+        try:
+            with open(green_fp, "r") as f:
+                green_dict = json.load(f)
+            new_green_res = green_dict[seg_id][green_id]
+        except (FileNotFoundError, KeyError):
+            if seg_id not in green_dict:
+                green_dict[seg_id] = {}
+            if green_id not in green_dict[seg_id]:
+                green_dict[seg_id][green_id] = {}
+            self.get(**get_kwargs)
+            self.load(**load_kwargs)
+            self.seg_analysis(**seg_kwargs)
+            new_green_res = self.green_analysis(**green_kwargs)
+            green_dict[seg_id][green_id] = new_green_res
+            with open(green_fp, "w") as f:
+                json.dump(green_dict, f, indent=2)
+        return new_green_res

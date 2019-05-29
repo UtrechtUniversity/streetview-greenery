@@ -90,6 +90,22 @@ class TileManager(object):
         self.dx = dx
         self.dy = dy
 
+    def green_direct(self, load_kwargs={}, **kwargs):
+        all_green_res = {
+            "green": [],
+            "lat": [],
+            "long": [],
+        }
+
+        load_kwargs['grid_level'] = self.grid_level
+        for _ in tqdm(range(len(self.tile_list))):
+            tile = self.tile_list.pop(0)
+            new_green_res = tile.green_direct(load_kwargs=load_kwargs,
+                                              **kwargs)
+            _extend_green_res(all_green_res, new_green_res)
+
+        return all_green_res
+
     def get(self, **kwargs):
         print("Obtaining meta data..")
         for tile in tqdm(self.tile_list):

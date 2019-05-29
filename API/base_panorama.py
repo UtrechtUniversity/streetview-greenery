@@ -49,6 +49,7 @@ class BasePanorama(ABC):
         """
         model_id = seg_model.id()
         if model_id not in self.segments or show or recalc:
+            print(f"{model_id}, {show}, {recalc}, {self.panorama_fp}")
             self.segments[model_id] = self.seg_run(seg_model, show)
             self.save()
 
