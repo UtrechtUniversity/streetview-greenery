@@ -59,6 +59,11 @@ def select_bbox(area="amsterdam"):
             [52.284, 4.885],
             [52.306, 4.930],
         ]
+    elif area == "gaasperdam":
+        bbox = [
+            [52.292, 4.960],
+            [52.305, 5.000],
+        ]
     else:
         bbox_str = area.split(',')
         try:

@@ -8,7 +8,8 @@ import numpy as np
 from API.adam_tile import AdamPanoramaTile
 from models.deeplab import DeepLabModel
 from greenery.greenery import VegetationPercentage
-from greenery.visualization import krige_greenery, _alpha_from_coordinates
+from greenery.visualization import krige_greenery, _alpha_from_coordinates,\
+    _semivariance
 from utils.mapping import MapImageOverlay
 from utils import _empty_green_res, _extend_green_res
 
@@ -125,6 +126,9 @@ class TileManager(object):
             )
         )
 
+        vario_kwargs = _semivariance(self.green_mat, variogram_model="exponential")
+#         krige_greenery(self.all_green_res, None, None)
+
         pbar = tqdm(total=self.n_tiles_x*self.n_tiles_y)
         for iy, green_row in enumerate(self.green_mat):
             for ix, green_res in enumerate(green_row):
@@ -151,7 +155,8 @@ class TileManager(object):
                 lat_grid = np.linspace(y_start, y_end, tile_res,
                                        endpoint=False)
                 try:
-                    krige = krige_greenery(krige_green_res, lat_grid, long_grid)
+                    krige = krige_greenery(krige_green_res, lat_grid, long_grid,
+                                           init_kwargs=vario_kwargs)
                 except ValueError:
                     pass
 

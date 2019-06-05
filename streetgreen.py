@@ -104,7 +104,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation_perc',
 
     overlay = tile_man.krige_map()
     overlay_dir = os.path.join("data.amsterdam", "maps")
-    overlay_file = f"{bbox_str}_{model}_level={grid_level}.json"
+    overlay_file = f"{bbox_str}_{model}_level={grid_level}.html"
     overlay_fp = os.path.join(overlay_dir, overlay_file)
     os.makedirs(overlay_dir, exist_ok=True)
 
