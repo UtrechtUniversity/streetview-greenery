@@ -126,7 +126,8 @@ class TileManager(object):
             )
         )
 
-        vario_kwargs = _semivariance(self.green_mat, variogram_model="exponential")
+        vario_kwargs = _semivariance(self.green_mat, plot=True,
+                                     variogram_model="exponential")
 #         krige_greenery(self.all_green_res, None, None)
 
         pbar = tqdm(total=self.n_tiles_x*self.n_tiles_y)

@@ -19,7 +19,6 @@ from matplotlib import pyplot as plt
 from tqdm._tqdm import tqdm
 
 
-
 def plot_greenery(green_res, cmap="gist_rainbow"):
     """
     Plot a map of the greenery values with matplotlib.
@@ -247,10 +246,16 @@ def _semivariance(green_matrix, nlags=200, variogram_model="exponential",
         var_fn, False)
 
     if plot:
+        lags_zero = np.append(0, lags)
         plt.plot(lags, semivariance)
-        plt.plot(lags, var_fn(param, lags))
-        plt.show()
+        plt.plot(lags_zero, var_fn(param, lags_zero))
+        plt.legend(["data", "variogram model"])
+        plt.xlabel("Distance (m)")
+        plt.ylabel("Semivariogram")
+        plt.ylim([0, 1.1*semivariance.max()])
+        plt.xlim([0, lags.max()])
         print(param)
+        plt.show()
 
     param[0] += param[2]
 
