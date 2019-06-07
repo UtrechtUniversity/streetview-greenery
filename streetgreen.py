@@ -95,7 +95,8 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation_perc',
     green_kwargs = select_green_model(greenery_measure)
 
     tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
-                           job_id=job_id, **seg_kwargs, **green_kwargs)
+                           job_id=job_id, **seg_kwargs,
+                           **green_kwargs)
 
     tile_man.green_direct(prepare_only=prepare_only)
 
