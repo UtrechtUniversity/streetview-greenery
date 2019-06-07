@@ -7,6 +7,8 @@ batch_files/
 pre_trained_models/
 data.amsterdam/
 .DS_Store
+ndvi
+batch.slurm_lisa
 
 # exclude PyDev/Eclipse files
 .pydevproject

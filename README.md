@@ -31,6 +31,7 @@ There is at the moment no real installation script. Just make sure you have all 
 - tqdm
 - requests
 - gdal
+- folium
 
 ## Quickstart
 

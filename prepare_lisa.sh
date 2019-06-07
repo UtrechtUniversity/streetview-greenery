@@ -8,16 +8,18 @@ fi
 COMMAND_FILE="temp_commands.txt"
 PRE_FILE="temp_pre.txt"
 CONFIG_FILE="prepare_lisa.ini"
-echo "cd `pwd`" > $PRE_FILE
+
+cat > $PRE_FILE << EOF_CAT
+cd `pwd`
+source hpc/module_load_cpu.sh
+EOF_CAT
 
 rm -f $COMMAND_FILE
 
 let "NJOB_MAX=N_JOBS-1"
 for JOB in `seq 0 $NJOB_MAX`; do
-    echo "\${python} ./streetgreen --prepare amsterdam_almere --njobs $N_JOBS --jobid $JOB -l 2" >> $COMMAND_FILE
+    echo "\${python} ./streetgreen.py --prepare --bbox amsterdam_almere --njobs $N_JOBS --jobid $JOB -l 2" >> $COMMAND_FILE
 done
-
-cat $COMMAND_FILE
 
 batchgen -f $COMMAND_FILE $CONFIG_FILE -pre $PRE_FILE
 

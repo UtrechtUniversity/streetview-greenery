@@ -11,9 +11,7 @@ import os
 
 from utils.selection import select_bbox, select_seg_model, select_green_model
 from API.tile_manager import TileManager
-from greenery.visualization import plot_greenery, create_kriged_overlay
 from utils.mapping import create_map
-from os.path import splitext
 
 
 def main():
@@ -97,32 +95,21 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation_perc',
     green_kwargs = select_green_model(greenery_measure)
 
     tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
-                           job_id=job_id, **seg_kwargs, **green_kwargs)
-    tile_man.get()
-    tile_man.load()
+                           job_id=job_id, **seg_kwargs,
+                           **green_kwargs)
 
-    if prepare_only:
+    tile_man.green_direct(prepare_only=prepare_only)
+
+    if prepare_only or skip_overlay:
         return
 
-    tile_man.seg_analysis()
-    green_res = tile_man.green_analysis()
-
-    if skip_overlay:
-        return
-
+    overlay = tile_man.krige_map()
     overlay_dir = os.path.join("data.amsterdam", "maps")
-    overlay_file = f"krige_{bbox_str}_level={grid_level}.json"
+    overlay_file = f"{bbox_str}_{model}_level={grid_level}.html"
     overlay_fp = os.path.join(overlay_dir, overlay_file)
     os.makedirs(overlay_dir, exist_ok=True)
 
-    res_mult = 2
-    resolution = tile_man.resolution()
-    resolution = [res_mult*x for x in resolution]
-
-    overlay = create_kriged_overlay(green_res, overlay_fp=overlay_fp,
-                                    grid=resolution)
-    create_map([overlay], html_file=splitext(overlay_fp)[0]+".html")
-#     plot_greenery(green_res)
+    create_map(overlay, html_file=overlay_fp)
 
 
 if __name__ == "__main__":
