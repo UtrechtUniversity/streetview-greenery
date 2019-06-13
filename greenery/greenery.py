@@ -3,14 +3,15 @@ Models to compute a greenery measure from segmentation data.
 '''
 
 
-class VegetationPercentage(object):
+class ClassPercentage(object):
     " Greenery as the percentage of the pixels from the vegetation class. "
-    def __init__(self):
-        self._id = "veg_perc"
+    def __init__(self, myclass="vegetation"):
+        self.myclass = myclass
+        self._id = f"perc_{myclass}"
 
     def test(self, seg_results):
         if 'vegetation' in seg_results:
-            return seg_results['vegetation']
+            return seg_results[self.myclass]
         else:
             return 0.0
 

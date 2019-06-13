@@ -1,11 +1,29 @@
-from os.path import splitext
+
+from models.deeplab import plot_segmentation
+
+from os.path import splitext, join
 from abc import ABC
 import json
+import numpy as np
+from utils.size import b64_to_json, json_to_b64
+from API.idgen import get_green_key
 
 
 def _meta_fp(panorama_fp):
     base_fp = splitext(panorama_fp)[0]
     return base_fp+"_meta"+".json"
+
+
+def _green_fractions(panorama_fp, seg_res, show=False):
+    seg_map = np.array(seg_res['seg_map'])
+    names = np.array(seg_res['color_map'][0])
+
+    unique, counts = np.unique(seg_map, return_counts=True, axis=None)
+
+    fractions = counts/seg_map.size
+    if show:
+        plot_segmentation(panorama_fp, seg_map, seg_res["color_map"])
+    return dict(zip(names[unique], fractions))
 
 
 class BasePanorama(ABC):
@@ -32,7 +50,10 @@ class BasePanorama(ABC):
         except FileNotFoundError:
             self.parse(self.meta_data)
             self.save()
+        self.segment_fp = join(data_dir, "segments.json")
         self.log_dict = self.todict()
+        self.all_green_res = {}
+        self.all_seg_res = {}
 
     def seg_analysis(self, seg_model, show=False, recalc=False):
         """
@@ -48,10 +69,13 @@ class BasePanorama(ABC):
             Ignore the cached results.
         """
         model_id = seg_model.id()
-        if model_id not in self.segments or show or recalc:
+        self.segment_fp = join(self.data_dir, "segment.json")
+        self.load_segmentation(self.segment_fp)
+        if model_id not in self.all_seg_res or show or recalc:
             print(f"{model_id}, {show}, {recalc}, {self.panorama_fp}")
-            self.segments[model_id] = self.seg_run(seg_model, show)
-            self.save()
+            self.all_seg_res[model_id] = self.seg_run(seg_model, show)
+            print(self.all_seg_res)
+            self.save_segmentation(self.segment_fp)
 
     def green_analysis(self, seg_model, green_model):
         """
@@ -73,18 +97,32 @@ class BasePanorama(ABC):
 
         # Run the segmentation model if not already done.
         seg_id = seg_model.id()
-        if seg_id not in self.segments:
+        if seg_id not in self.all_seg_res:
             self.seg_analysis(seg_model)
-        seg_res = self.segments[seg_id]
+        seg_res = self.all_seg_res[seg_id]
 
+        green_fp = join(self.data_dir, "greenery.json")
         # Run greenery analysis if not already done.
-        if seg_id not in self.greenery:
-            self.greenery[seg_id] = {}
-        green_dict = self.greenery[seg_id]
-        if green_id not in self.greenery[seg_id]:
-            green_dict[green_id] = green_model.test(seg_res)
-            self.save()
-        return self.greenery[seg_id][green_id]
+        self.load_greenery(green_fp)
+        key = get_green_key(self.__class__, seg_id, green_id)
+        if key not in self.all_green_res or True:
+            seg_frac = _green_fractions(self.panorama_fp, seg_res)
+#             print(seg_frac)
+            self.all_green_res[key] = green_model.test(seg_frac)
+            self.save_greenery(green_fp)
+        return self.all_green_res[key]
+
+    def load_greenery(self, green_fp):
+        self.all_green_res = {}
+        try:
+            with open(green_fp, "r") as fp:
+                self.all_green_res = json.load(fp)
+        except FileNotFoundError:
+            pass
+
+    def save_greenery(self, green_fp):
+        with open(green_fp, "w") as fp:
+            json.dump(self.all_green_res, fp, indent=2)
 
     def save(self):
         """ Save the logs to a file. """
@@ -98,6 +136,28 @@ class BasePanorama(ABC):
         with open(meta_fp, "r") as f:
             log_dict = json.load(f)
         self.fromdict(log_dict)
+
+    def load_segmentation(self, segment_fp):
+        self.all_seg_res = {}
+        try:
+            with open(segment_fp, "r") as f:
+                zipped_seg_res = json.load(f)
+                for name in zipped_seg_res:
+                    zsr = zipped_seg_res[name]
+                    usr = b64_to_json(zsr)
+                    self.all_seg_res[name] = usr
+        except FileNotFoundError:
+            pass
+
+    def save_segmentation(self, segment_fp):
+        zipped_seg_res = {}
+        for name in self.all_seg_res:
+            zsr = json_to_b64(self.all_seg_res[name])
+            zipped_seg_res[name] = zsr
+
+#         print(zipped_seg_res)
+        with open(segment_fp, "w") as f:
+            json.dump(zipped_seg_res, f)
 
     def todict(self):
         " Put data in a dictionary. "
@@ -121,4 +181,3 @@ class BasePanorama(ABC):
         self.latitude = log_dict["latitude"]
         self.longitude = log_dict["longitude"]
         self.meta_data = log_dict["meta_data"]
-        

@@ -12,11 +12,13 @@ import numpy as np
 
 from API.adam_manager import AdamPanoramaManager
 from utils import _empty_green_res
+from API.idgen import get_green_key
 
 
 class AdamPanoramaTile(AdamPanoramaManager):
     def __init__(self, tile_name="unknown",
                  bbox=[[52.35, 4.93], [52.45, 4.935]],
+                 grid_level=None,
                  **kwargs):
         super(AdamPanoramaTile, self).__init__(**kwargs)
         self.tile_name = tile_name
@@ -38,11 +40,12 @@ class AdamPanoramaTile(AdamPanoramaManager):
             str(bbox[1][1]) + "," + str(bbox[0][0])
         self.bbox = bbox
         self.bb_string = bb_string
+        self.grid_level = grid_level
 
     def get(self, **kwargs):
         super(AdamPanoramaTile, self).get(bbox=self.bb_string, **kwargs)
 
-    def load(self, grid_level=None, verbose=True, **kwargs):
+    def load(self, verbose=True, **kwargs):
         """
         Compute which panorama's should be (down)loaded, load those.
 
@@ -55,6 +58,7 @@ class AdamPanoramaTile(AdamPanoramaManager):
             Print messages to terminal or not.
         """
         # If no grid level behave as super class (AdamPanoramaManager).
+        grid_level = self.grid_level
         if grid_level is None:
             super(AdamPanoramaTile, self).load(**kwargs)
             return
@@ -129,26 +133,21 @@ class AdamPanoramaTile(AdamPanoramaManager):
 
     def green_direct(self, prepare_only=False, get_kwargs={}, load_kwargs={},
                      seg_kwargs={}, green_kwargs={}):
-        green_fp = os.path.join(self.data_dir, "green_res.json")
         seg_id = self.seg_model.id()
         green_id = self.green_model.id()
-        green_dict = {}
+        green_level_key = get_green_key(self.pano_class, seg_id, green_id,
+                                        self.grid_level)
+        green_fp = os.path.join(self.data_dir, green_level_key+".json")
         try:
             with open(green_fp, "r") as f:
-                green_dict = json.load(f)
-            new_green_res = green_dict[seg_id][green_id]
-        except (FileNotFoundError, KeyError):
-            if seg_id not in green_dict:
-                green_dict[seg_id] = {}
-            if green_id not in green_dict[seg_id]:
-                green_dict[seg_id][green_id] = {}
+                green_res = json.load(f)
+        except FileNotFoundError:
             self.get(**get_kwargs)
             self.load(**load_kwargs)
             if prepare_only:
                 return _empty_green_res()
             self.seg_analysis(**seg_kwargs)
-            new_green_res = self.green_analysis(**green_kwargs)
-            green_dict[seg_id][green_id] = new_green_res
+            green_res = self.green_analysis(**green_kwargs)
             with open(green_fp, "w") as f:
-                json.dump(green_dict, f, indent=2)
-        return new_green_res
+                json.dump(green_res, f, indent=2)
+        return green_res
