@@ -1,5 +1,3 @@
-# from API import AdamPanorama
-# from API.adam_panorama_cubic import AdamPanoramaCubic
 
 
 def get_green_key(myclass, seg_id, green_id, grid_level=None):

@@ -12,6 +12,7 @@ from greenery.visualization import krige_greenery, _alpha_from_coordinates,\
     _semivariance
 from utils.mapping import MapImageOverlay
 from utils import _empty_green_res, _extend_green_res
+from API.idgen import get_green_key
 
 
 class TileManager(object):
@@ -93,6 +94,9 @@ class TileManager(object):
         self.y_start = y_start + i_min_y*dy
         self.green_mat = None
         self.all_green_res = None
+        self.map_key = get_green_key(self.tile_list[0][0].pano_class,
+                                     self.seg_model.id(),
+                                     self.green_model.id(), self.grid_level)
 
     def green_direct(self, load_kwargs={}, **kwargs):
         all_green_res = {
@@ -125,7 +129,7 @@ class TileManager(object):
             )
         )
 
-        vario_kwargs = _semivariance(self.green_mat, plot=True,
+        vario_kwargs = _semivariance(self.green_mat, plot=False,
                                      variogram_model="exponential")
 #         krige_greenery(self.all_green_res, None, None)
 
@@ -178,7 +182,7 @@ class TileManager(object):
         overlay = MapImageOverlay(full_krige_map, lat_grid=full_lat_grid,
                                   long_grid=full_long_grid,
                                   alpha_map=alpha_map, name=overlay_name)
-        return overlay
+        return overlay, self.map_key
 
     def get(self, **kwargs):
         print("Obtaining meta data..")

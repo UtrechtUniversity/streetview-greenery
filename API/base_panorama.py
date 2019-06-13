@@ -72,9 +72,9 @@ class BasePanorama(ABC):
         self.segment_fp = join(self.data_dir, "segment.json")
         self.load_segmentation(self.segment_fp)
         if model_id not in self.all_seg_res or show or recalc:
-            print(f"{model_id}, {show}, {recalc}, {self.panorama_fp}")
+#             print(f"{model_id}, {show}, {recalc}, {self.panorama_fp}")
             self.all_seg_res[model_id] = self.seg_run(seg_model, show)
-            print(self.all_seg_res)
+#             print(self.all_seg_res)
             self.save_segmentation(self.segment_fp)
 
     def green_analysis(self, seg_model, green_model):

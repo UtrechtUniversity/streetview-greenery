@@ -184,7 +184,7 @@ def _sample_dist(i_coor, i_green, j_coor, j_green, n_sample):
 
 
 def _compute_dist(ix, iy, i_green_res, jx, jy, j_green_res):
-    if ix > jx or ix > jy:
+    if ix > jx or (ix == jx and iy > jy):
         return np.array([]), np.array([])
     i_coor, i_green = _stack_green_res(i_green_res)
     j_coor, j_green = _stack_green_res(j_green_res)
@@ -202,6 +202,8 @@ def _compute_dist(ix, iy, i_green_res, jx, jy, j_green_res):
         i_n_sample = max(i_green.shape[0]/sqrt(d_tile+1), 1)
         j_n_sample = max(j_green.shape[0]/sqrt(100*(d_tile+1)), 1)
         n_sample = round(i_n_sample*j_n_sample)
+        max_sample = i_green.shape[0]*j_green.shape[0]
+        n_sample = min(max(10000, n_sample), max_sample)
         return _sample_dist(i_coor, i_green, j_coor, j_green, n_sample)
 
 
@@ -243,6 +245,9 @@ def _semivariance(green_matrix, nlags=None, variogram_model="exponential",
         var_fn = exponential_variogram_model
     elif variogram_model == "spherical":
         var_fn = spherical_variogram_model
+#     print(nlags, all_d, green_matrix)
+#     print(lags)
+#     print(semivariance)
     param = _calculate_variogram_model(
         lags, semivariance, variogram_model,
         var_fn, False)

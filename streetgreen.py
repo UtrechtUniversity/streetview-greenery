@@ -35,9 +35,10 @@ def argument_parser():
     parser.add_argument(
         "-g", "--greenery-measure",
         type=str,
-        default="vegetation_perc",
+        default="vegetation",
         help="Greenery measure algorithm. "
-             "Default: 'vegetation_perc' (only option)"
+             "Default: 'vegetation' "
+             "Other options include {road, bus, sky, etc}."
     )
     parser.add_argument(
         "-n", "--njobs",
@@ -84,18 +85,27 @@ def argument_parser():
         action="store_true",
         help="Only prepare the data, do not compute anything."
     )
+    parser.add_argument(
+        "--panorama",
+        default=False,
+        dest="use_panorama",
+        action="store_true",
+        help="Use panorama pictures instead of cubic pictures"
+    )
     return parser
 
 
-def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation_perc',
+def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
                 n_job=1, job_id=0, bbox_str='amsterdam', grid_level=0,
-                skip_overlay=False, prepare_only=False):
+                skip_overlay=False, prepare_only=False, use_panorama=False):
     bbox = select_bbox(bbox_str)
     seg_kwargs = select_seg_model(model)
     green_kwargs = select_green_model(greenery_measure)
+    cubic_pictures = not use_panorama
 
     tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
-                           job_id=job_id, **seg_kwargs,
+                           job_id=job_id, **seg_kwargs, 
+                           cubic_pictures=cubic_pictures,
                            **green_kwargs)
 
     tile_man.green_direct(prepare_only=prepare_only)
@@ -103,9 +113,9 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation_perc',
     if prepare_only or skip_overlay:
         return
 
-    overlay = tile_man.krige_map()
+    overlay, key = tile_man.krige_map()
     overlay_dir = os.path.join("data.amsterdam", "maps")
-    overlay_file = f"{bbox_str}_{model}_level={grid_level}.html"
+    overlay_file = f"{bbox_str}_{key}.html"
     overlay_fp = os.path.join(overlay_dir, overlay_file)
     os.makedirs(overlay_dir, exist_ok=True)
 

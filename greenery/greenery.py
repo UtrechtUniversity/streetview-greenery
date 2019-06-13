@@ -10,9 +10,9 @@ class ClassPercentage(object):
         self._id = f"perc_{myclass}"
 
     def test(self, seg_results):
-        if 'vegetation' in seg_results:
+        try:
             return seg_results[self.myclass]
-        else:
+        except KeyError:
             return 0.0
 
     def id(self):
