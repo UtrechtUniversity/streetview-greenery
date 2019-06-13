@@ -7,7 +7,7 @@ import numpy as np
 
 from API.adam_tile import AdamPanoramaTile
 from models.deeplab import DeepLabModel
-from greenery.greenery import VegetationPercentage
+from greenery.greenery import ClassPercentage
 from greenery.visualization import krige_greenery, _alpha_from_coordinates,\
     _semivariance
 from utils.mapping import MapImageOverlay
@@ -17,7 +17,7 @@ from utils import _empty_green_res, _extend_green_res
 class TileManager(object):
     def __init__(self, tile_resolution=1024, bbox=None, grid_level=1,
                  n_job=1, job_id=0, seg_model=DeepLabModel, seg_kwargs={},
-                 green_model=VegetationPercentage, green_kwargs={},
+                 green_model=ClassPercentage, green_kwargs={},
                  **kwargs):
         NL_bbox = [
             [50.803721015, 3.31497114423],
@@ -79,7 +79,7 @@ class TileManager(object):
                 continue
 
             tile = AdamPanoramaTile(
-                tile_name=tile_name, bbox=cur_bbox,
+                tile_name=tile_name, bbox=cur_bbox, grid_level=grid_level,
                 seg_model=self.seg_model, green_model=self.green_model,
                 **kwargs)
             self.tile_list.append((tile, ix-i_min_x, iy-i_min_y))
@@ -104,7 +104,6 @@ class TileManager(object):
         for iy in range(len(self.green_mat)):
             self.green_mat[iy] = [{} for _ in range(self.n_tiles_x)]
 
-        load_kwargs['grid_level'] = self.grid_level
         for _ in tqdm(range(len(self.tile_list))):
             tile, ix, iy = self.tile_list.pop(0)
             new_green_res = tile.green_direct(load_kwargs=load_kwargs,
@@ -193,7 +192,7 @@ class TileManager(object):
     def load(self, **kwargs):
         for tile in self.tile_list:
             if tile.tile_name not in self.empty_tiles:
-                tile.load(grid_level=self.grid_level, **kwargs)
+                tile.load(**kwargs)
 
     def seg_analysis(self, **kwargs):
         for tile in self.tile_list:

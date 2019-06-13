@@ -7,6 +7,11 @@ try:
 except ImportError:
     pass
 
+import base64
+import json
+import numpy as np
+import zlib
+
 
 def total_size(o, handlers={}, verbose=False):
     """ Returns the approximate memory footprint an object and all of its contents.
@@ -47,3 +52,35 @@ def total_size(o, handlers={}, verbose=False):
         return s
 
     return sizeof(o)
+
+
+def json_to_b64(seg_res):
+    serial_seg_res = {
+        'seg_map': seg_res['seg_map'].tolist(),
+        'color_map': (
+            seg_res['color_map'][0].tolist(),
+            seg_res['color_map'][1].tolist(),
+        )
+    }
+    data_64 = base64.b64encode(
+        zlib.compress(
+            json.dumps(serial_seg_res).encode('utf-8')
+        )
+    ).decode('ascii')
+    return data_64
+
+
+def b64_to_json(data_64):
+    serial_seg_res = json.loads(
+        zlib.decompress(
+            base64.b64decode(data_64)
+        )
+    )
+    seg_res = {
+        'seg_map': np.array(serial_seg_res['seg_map']),
+        'color_map': (
+            np.array(serial_seg_res['color_map'][0]),
+            np.array(serial_seg_res['color_map'][1])
+        )
+    }
+    return seg_res

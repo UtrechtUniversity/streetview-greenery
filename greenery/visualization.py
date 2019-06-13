@@ -205,7 +205,7 @@ def _compute_dist(ix, iy, i_green_res, jx, jy, j_green_res):
         return _sample_dist(i_coor, i_green, j_coor, j_green, n_sample)
 
 
-def _semivariance(green_matrix, nlags=200, variogram_model="exponential",
+def _semivariance(green_matrix, nlags=None, variogram_model="exponential",
                   plot=False):
     all_d = []
     all_g = []
@@ -225,6 +225,8 @@ def _semivariance(green_matrix, nlags=200, variogram_model="exponential",
     sort_idx = np.argsort(all_d)
     d = all_d[sort_idx]
     g = all_g[sort_idx]
+    if nlags is None:
+        nlags = max(6, min(round(len(d)/10), 200))
     lags = np.zeros(nlags)
     semivariance = np.zeros(nlags)
 

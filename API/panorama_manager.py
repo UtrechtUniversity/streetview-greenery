@@ -9,7 +9,7 @@ import inspect
 
 from models import DeepLabModel
 from abc import ABC
-from greenery import VegetationPercentage
+from greenery import ClassPercentage
 from urllib.error import HTTPError
 
 
@@ -17,7 +17,7 @@ class BasePanoramaManager(ABC):
     " Base class for managing a data set of panoramas. "
 
     def __init__(self, seg_model=DeepLabModel, seg_kwargs={},
-                 green_model=VegetationPercentage, green_kwargs={},
+                 green_model=ClassPercentage, green_kwargs={},
                  data_id="unknown", data_dir="data.default"):
         self.meta_data = []
         self.panoramas = []

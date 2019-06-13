@@ -7,13 +7,13 @@ Created on 16 May 2019
 import sys
 
 from models import DeepLabModel
-from greenery import VegetationPercentage
+from greenery import ClassPercentage
 
 
 def select_area(area, seg_model="mobilenet"):
     manager_kwargs = {
         'seg_model': DeepLabModel,
-        'green_model': VegetationPercentage,
+        'green_model': ClassPercentage,
         'data_id': area,
         'seg_kwargs': {"model_name": seg_model}
     }
@@ -95,7 +95,7 @@ def select_seg_model(model_str="deeplab-mobilenet"):
 
 def select_green_model(model_str="vegetation_perc"):
     if model_str == "vegetation_perc":
-        manager_kwargs = {'green_model': VegetationPercentage}
+        manager_kwargs = {'green_model': ClassPercentage}
     else:
         print(f"Unknown greenery measure {model_str}")
         sys.exit(125)

@@ -11,6 +11,7 @@ import os
 from io import BytesIO
 import tarfile
 from six.moves import urllib
+import operator
 
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
@@ -130,7 +131,8 @@ class DeepLabModel(object):
         return results
 
 
-def plot_segmentation(image_fp, seg_map, color_map, show=True):
+def plot_segmentation(image_fp, seg_map, color_map, show=True,
+                      plot_labels=None):
     """Visualizes input image, segmentation map and overlay view."""
 
     # Resize the image to the segmentation map.
@@ -168,12 +170,25 @@ def plot_segmentation(image_fp, seg_map, color_map, show=True):
     plt.title('segmentation overlay')
 
     # Plot the legend showing the segmentation colors and their meaning.
-    unique_labels = np.unique(seg_map)
+    if plot_labels is not None:
+        unique_labels = []
+        new_label_names = []
+        for key in sorted(plot_labels.items(), key=operator.itemgetter(1),
+                          reverse=True):
+            label_id = key[0]
+            unique_labels.append(label_id)
+            frac = round(100*plot_labels[label_id], 1)
+            new_label_names.append(f"{label_names[label_id]} ({frac}%)")
+        label_names = np.array(new_label_names)
+        unique_labels = np.array(unique_labels)
+    else:
+        unique_labels = np.unique(seg_map)
+#     print(unique_labels)
     ax = plt.subplot(grid_spec[3])
     img_colors = np.reshape(label_colors[unique_labels], (-1, 1, 3))
     plt.imshow(img_colors.astype(np.uint8), interpolation='nearest')
     ax.yaxis.tick_right()
-    plt.yticks(range(len(unique_labels)), label_names[unique_labels])
+    plt.yticks(range(len(unique_labels)), label_names)
     plt.xticks([], [])
     ax.tick_params(width=0.0)
     plt.grid(False)
