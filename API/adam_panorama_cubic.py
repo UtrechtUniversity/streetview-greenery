@@ -29,6 +29,7 @@ def _corrected_fractions(seg_map, names):
             seg_frac[seg_map[iy, ix]] += fac
             tot_frac += fac
 
+    print(tot_frac)
     for i in range(nclass):
         if seg_frac[i] > 0:
             seg_frac_dict[names[i]] = seg_frac[i]/tot_frac
@@ -98,26 +99,35 @@ class AdamPanoramaCubic(BasePanorama):
         green_id = green_model.id()
         seg_id = seg_model.id()
         key = get_green_key(AdamPanoramaCubic, seg_id, green_id)
-        if len(self.all_seg_res) < 1:
-            self.seg_analysis(seg_model)
         self.load_greenery(self.green_fp)
         if key not in self.all_green_res:
+            if len(self.all_seg_res) < 1:
+                self.seg_analysis(seg_model)
+
             seg_frac = {}
-            n_pano = len(self.panorama_fp)
+            n_pano = len(self.all_seg_res)
             for name in self.all_seg_res:
                 seg_res = self.all_seg_res[name]
                 seg_map = np.array(seg_res['seg_map'])
                 names = np.array(seg_res['color_map'][0])
-                new_frac = _corrected_fractions(seg_map, names)
+                new_frac = green_model.test_seg_map2(seg_map, names)
+
+#                 green_val = green_model.test(new_frac)
+#                 greenery += green_model.test_seg_map(seg_map, names)/n_pano
+#                 print(green_model.test_seg_map(seg_map, names))
+#                 print(green_model.test_seg_map2(seg_map, names))
+#                 print(green_val, other_green_val)
+#                 import sys
+#                 sys.exit()
 
                 for class_name in new_frac:
                     if class_name in seg_frac:
                         seg_frac[class_name] += new_frac[class_name]/n_pano
                     else:
                         seg_frac[class_name] = new_frac[class_name]/n_pano
-            self.all_green_res[key] = green_model.test(seg_frac)
+            self.all_green_res[key] = seg_frac
             self.save_greenery(self.green_fp)
-        return self.all_green_res[key]
+        return green_model.test(self.all_green_res[key])
 
     def seg_run(self, model, show=False):
         " Do segmentation analysis on the picture. "

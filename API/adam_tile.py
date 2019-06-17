@@ -134,7 +134,7 @@ class AdamPanoramaTile(AdamPanoramaManager):
     def green_direct(self, prepare_only=False, get_kwargs={}, load_kwargs={},
                      seg_kwargs={}, green_kwargs={}):
         seg_id = self.seg_model.id()
-        green_id = self.green_model.id()
+        green_id = self.green_model.id(one_class=True)
         green_level_key = get_green_key(self.pano_class, seg_id, green_id,
                                         self.grid_level)
         green_fp = os.path.join(self.data_dir, green_level_key+".json")
@@ -146,7 +146,7 @@ class AdamPanoramaTile(AdamPanoramaManager):
             self.load(**load_kwargs)
             if prepare_only:
                 return _empty_green_res()
-            self.seg_analysis(**seg_kwargs)
+#             self.seg_analysis(**seg_kwargs)
             green_res = self.green_analysis(**green_kwargs)
             with open(green_fp, "w") as f:
                 json.dump(green_res, f, indent=2)

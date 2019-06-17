@@ -89,8 +89,9 @@ class BasePanoramaManager(ABC):
                 self.panoramas.append(self.new_panorama(
                     meta_data=meta, data_dir=dest_dir))
             except HTTPError:
-                print(f"Error retrieving panorama data, skipping.")
-                print(meta)
+                pass
+#                 print(f"Error retrieving panorama data, skipping.")
+#                 print(meta)
             if pbar is not None:
                 pbar.update()
 

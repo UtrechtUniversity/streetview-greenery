@@ -19,7 +19,7 @@ from matplotlib import pyplot as plt
 from tqdm._tqdm import tqdm
 
 
-def plot_greenery(green_res, cmap="gist_rainbow"):
+def plot_greenery(green_res, cmap="RdYlGn", show=True, title=None):
     """
     Plot a map of the greenery values with matplotlib.
 
@@ -49,8 +49,11 @@ def plot_greenery(green_res, cmap="gist_rainbow"):
     plt.plot(long, lat, 'k.')
     plt.xlabel('longitude', fontsize=16)
     plt.ylabel('latitude', fontsize=16)
+    if title is not None:
+        plt.title(title)
     plt.colorbar()
-    plt.show()
+    if show:
+        plt.show()
 
 
 def create_kriged_overlay(green_res, grid=[200, 200], cmap="gist_rainbow",
