@@ -1,8 +1,3 @@
-'''
-Created on 16 May 2019
-
-@author: qubix
-'''
 
 import sys
 
@@ -93,10 +88,11 @@ def select_seg_model(model_str="deeplab-mobilenet"):
     return manager_kwargs
 
 
-def select_green_model(model_str="vegetation_perc"):
-    if model_str == "vegetation_perc":
-        manager_kwargs = {'green_model': ClassPercentage}
-    else:
-        print(f"Unknown greenery measure {model_str}")
-        sys.exit(125)
+def select_green_model(myclass="vegetation"):
+    manager_kwargs = {
+        'green_model': ClassPercentage,
+        'green_kwargs': {
+            "myclass": myclass
+        }
+    }
     return manager_kwargs

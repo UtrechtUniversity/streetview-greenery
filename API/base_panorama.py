@@ -72,9 +72,9 @@ class BasePanorama(ABC):
         self.segment_fp = join(self.data_dir, "segment.json")
         self.load_segmentation(self.segment_fp)
         if model_id not in self.all_seg_res or show or recalc:
-            print(f"{model_id}, {show}, {recalc}, {self.panorama_fp}")
+#             print(f"{model_id}, {show}, {recalc}, {self.panorama_fp}")
             self.all_seg_res[model_id] = self.seg_run(seg_model, show)
-            print(self.all_seg_res)
+#             print(self.all_seg_res)
             self.save_segmentation(self.segment_fp)
 
     def green_analysis(self, seg_model, green_model):
@@ -97,20 +97,21 @@ class BasePanorama(ABC):
 
         # Run the segmentation model if not already done.
         seg_id = seg_model.id()
-        if seg_id not in self.all_seg_res:
-            self.seg_analysis(seg_model)
-        seg_res = self.all_seg_res[seg_id]
 
         green_fp = join(self.data_dir, "greenery.json")
         # Run greenery analysis if not already done.
         self.load_greenery(green_fp)
         key = get_green_key(self.__class__, seg_id, green_id)
-        if key not in self.all_green_res or True:
+        if key not in self.all_green_res:
+            if seg_id not in self.all_seg_res:
+                self.seg_analysis(seg_model)
+            seg_res = self.all_seg_res[seg_id]
             seg_frac = _green_fractions(self.panorama_fp, seg_res)
 #             print(seg_frac)
-            self.all_green_res[key] = green_model.test(seg_frac)
+            self.all_green_res[key] = seg_frac
+#             green_model.test(seg_frac)
             self.save_greenery(green_fp)
-        return self.all_green_res[key]
+        return green_model.test(self.all_green_res[key])
 
     def load_greenery(self, green_fp):
         self.all_green_res = {}

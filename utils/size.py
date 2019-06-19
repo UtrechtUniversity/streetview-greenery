@@ -62,22 +62,30 @@ def json_to_b64(seg_res):
             seg_res['color_map'][1].tolist(),
         )
     }
-    data_64 = base64.b64encode(
-        zlib.compress(
-            json.dumps(serial_seg_res).encode('utf-8')
-        )
-    ).decode('ascii')
+    compressed_data = zlib.compress(json.dumps(serial_seg_res).encode('utf-8'))
+
+    try:
+        import pybase64
+        data_64 = pybase64.b64encode(compressed_data, validate=True
+                                     ).decode('ascii')
+    except ImportError:
+        data_64 = base64.b64encode(compressed_data).decode('ascii')
     return data_64
 
 
 def b64_to_json(data_64):
+    try:
+        import pybase64
+        decoded_data = pybase64.b64decode(data_64, validate=True)
+    except ImportError:
+        decoded_data = base64.b64decode(data_64)
+
     serial_seg_res = json.loads(
-        zlib.decompress(
-            base64.b64decode(data_64)
-        )
+        zlib.decompress(decoded_data)
     )
+
     seg_res = {
-        'seg_map': np.array(serial_seg_res['seg_map']),
+        'seg_map': np.array(serial_seg_res['seg_map'], dtype=int),
         'color_map': (
             np.array(serial_seg_res['color_map'][0]),
             np.array(serial_seg_res['color_map'][1])
