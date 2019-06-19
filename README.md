@@ -4,7 +4,7 @@ Project to retrieve and process panoramic photo's and compute the greenery as pe
 
 ## Description
 
-The base idea of this package is to download panorama (or other) pictures of living/working area's and compute the greenness of that area. The first step is to do a segmentation analysis: assigning object classes to individual pixels. The second step is to convert these segmented pictures into a measure of greenness. The last step is to compute a map from individiual greenness measures.
+The base idea of this package is to download street view panorama (or other) pictures and compute measures of greenness. The first step is to do a segmentation analysis: assigning object classes to individual pixels. The second step is to convert these segmented pictures into a measure of greenness. The last step is to create a map from individiual greenness measures.
 
 ## Example maps
 
@@ -32,65 +32,84 @@ There is at the moment no real installation script. Just make sure you have all 
 - requests
 - gdal
 - folium
+- pybase64 [optional]
 
-## Quickstart
+## Quickstart [Command Line Interface]
 
-The script [adam_alm.py](adam_alm.py) is an example of how to do a simple greenery analysis.
+There are two ways to interact with this package: Command Line Interfaces (CLI) or directly using it as a python library (API). The quickest way to start using the package is to use the CLI. There are several runnable files, the main one being "streetgreen.py".
 
-#### Panorama Manager
 
-The first step is to instance a panorama manager. The job of the panorama manager is to manage the collection of images/panorama's, which includes downloading/creating panorama's, handle errors, checking if the data already exists, etc. To instance the panorama manager, one needs to pass it the segmentation model + parameters, and greenery model + parameters.
+
+#### Creating a dataset [street_green.py]
+
+The script "streetgreen.py" is the workhorse of the package, downloading and processing images. Currently a single data source is included, which is panoramas provided freely by the municipality of Amsterdam: [data.amsterdam.nl](https://data.amsterdam.nl).
+
+By default the program will select some area in Amsterdam/Almere and it will sample panoramas in a grid. At the coarsest level it will obtain one data point for each 1km x 1km tile. Then from the greenery measure of each of these tiles, a map will be constructed using a Kriging procedure. 
+
+Options for the "street_green.py" script can be obtained by navigating to the installation directory and typing:
+
+```sh
+./streetgreen.py --help
+```
+
+The most important option is to select the bounding box of the area to map, with `"-b/--bbox`. The bounding box "almere_amsterdam" includes nearly the whole coverage of the dataset.
+
+The segmentation model can be selected through `-m/--model`. Currently, only pretrained models from [DeepLab](https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md) are available for selection. Choose "deeplab-mobilenet" for fast inference and "deeplab-xception_71" for higher quality inference.
+
+Process based parallelization is available through a combination of the `-n` and `-i` options, which distributes the 1km x 1km tiles over differnt jobs. For example if you have two machines, then on one you would run `-n 2 -i 0`, while you would give the other machine the `-n 2 -i 1` option. Then merging the tile data, you would have the complete data that you would get running with default options.
+
+The resolution can be adjusted by using the `-l/--grid` options. Every level higher increases the spatial resolution of the map by a factor of 2, with the lowest being 1km x 1km.
+
+#### Individual picture analysis [seg_analysis.py]
+
+Segmentation analysis of individual/arbitrary pictures/panoramas is available through the `seg_analysis.py` script. It takes a single argument: the picture to analyse. It will show the picture + the segmentation overlay in a new window.
+
+#### Basic statistical comparison [comp_green.py]
+
+To compare different "green" measures against each other, the `comp_green.py` script can be used. It computes a linear regression between different variables or the same variable but panoramic vs cubic pictures.
+
+
+## Application Programming Interface
+
+There are several layers of abstraction to solve the problem of getting data, organizing files, and doing segmentation analyses. The recommended way is to use the tile manager, which ensures that the panoramas are divided into 1km x 1km tiles. This gives the benefit of possible parallelization, but also ensures that not too many pictures are placed in the same folder, and the amount of memory used is limited.
+
+#### TileManager
+
+To create an instance of a tile managers, one does the following:
 
 ```python
-panoramas = AdamPanoramaManager(seg_model=DeepLabModel,
-                                green_model=VegetationPercentage
-)
+tile_man = TileManager(seg_model=DeepLabModel,
+					 seg_kwargs={"model_name": "xception_71"}
+					 green_model=ClassPercentage,
+					 grid_level=1,
+					 bbox=select_area("amsterdam"))
 ```
 
-Currently, there is only one data source implemented, which is the [data.amsterdam](http://data.amsterdam.nl) API. 
-
-#### Loading meta-data
-
-The second step is to load the meta-data into memory. This can be done from disk or downloaded from the internet. This data (and almost all other data) is automatically cached on disk. Parameters for this step is for example setting the borders of what to download:
-
-```python 
-cc = [52.299584, 4.971973]  # Degrees lattitude, longitude
-# Radius of circle to download.
-radius = 100  # meters
-panoramas.get(center=cc, radius=radius)
-```
-
-#### (Down)loading panorama data into memory
-
-The third step is to load the actual panorama's into memory. This is done using the meta data of the previous step. As a parameter one can set the number of samples that are taken. Any pictures not sampled are not downloaded. The process is seeded such that always the same pictures are loaded.
+This creates a tile manager that organizes the data and pictures. By initializing the tile manager, the data is not automatically downloaded yet. There are two different ways to continue; the recommended way to obtain the greenery data is to use the `green_direct` method, which does all the steps in sequence. One advantage is that it will do each tile in sequence and clears the memory usage of temporary data:
 
 ```python
-panoramas.load(n_sample=1000)
+green_res = tile_man.green_direct()
 ```
 
-#### Segmentation analysis
+One thing to keep in mind is that a lot of temporary data is stored/cached, so that it does not need to be recalculated every time. For example the segmentation of each picture is stored in a file such as `segments_cubic_deeplab_mobilenet.json`, which contains a gzip'ed segmentation array converted to base64 to make it portable/human readable, but also space efficient.
 
-The next step is to do the segmentation analysis for each picture. Currently there is a single model implemented, which is a pre-trained DeepLab model (from [here](https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md)). Currently only the MobileNet-v2 version is available, which offers fast inference time (but relatively poor performance). The model is based on the City Scapes data set.
-
-```python
-panoramas.seg_analysis()
-```
-
-#### Greenery analysis
-
-Greenery analysis is done at the next step. At the moment with the City Scapes dataset, greenery analysis is simply finding the percentage of pixels assigned to the class "vegetation".
-
-```python
-green_res = panoramas.green_analysis()
-```
-
-The function gives back a dictionary with the greenery measure, longitude and lattitude coordinates.
+The functions will try to detect this file and not recompute it if it is already available. A next step would be to compute the vegetation percentages, which are also cached in a `green_res.json`, and include the WGS84 coordinates.
 
 #### Visualization
 
-The greenery can be plotted in a 2d contour plot by using either the "plot\_greenery" or "plot\_green\_krige" functions. The first uses simple linear interpolation to generate a contour plot. The second uses ordinary kriging (variogram=spherical) to get a better estimate. The latter also creates an overlay for Open Streetmap, which can be viewed by opening index.html.
+The greenery can be plotted in a 2d contour plot by using either the "plot\_greenery" or the  or "krige\_map" method of the TileManager class.
 
 ```python
-krige_overlay = plot_green_krige(green_res)
-create_map([krige_overlay], "index.html")
+plot_greenery(green_res)
 ```
+
+This procedure uses linear interpolation of the data points.
+
+or create an HTML map (under data.amsterdam/maps/) overlayed on top of OpenStreetMap:
+
+```python
+tile_man.krige_map()
+```
+
+This procedure uses ordinary kriging, with currently an exponential variogram. For performance reasons, the kriging procedure is not applied to the data as a single block, but instead, stitched together from each tile. The variogram is computed from all points (but with sampling).
+
