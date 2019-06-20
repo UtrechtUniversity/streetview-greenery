@@ -6,6 +6,7 @@ import json
 from json.decoder import JSONDecodeError
 import gdal
 import osr
+import osgeo.ogr as ogr
 
 
 class MapImageOverlay:
@@ -146,6 +147,34 @@ def create_map(green_layers, html_file="index.html"):
         ).add_to(m)
     folium.LayerControl().add_to(m)
     m.save(html_file)
+
+
+def green_res_to_shp(green_res, green_key, shape_fp):
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    data_source = driver.CreateDataSource(shape_fp)
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(4326)
+    layer = data_source.CreateLayer("greenery", srs, ogr.wkbPoint)
+    layer.CreateField(ogr.FieldDefn(green_key, ogr.OFTReal))
+    layer.CreateField(ogr.FieldDefn("Latitude", ogr.OFTReal))
+    layer.CreateField(ogr.FieldDefn("Longitude", ogr.OFTReal))
+
+    for i in range(len(green_res["green"])):
+        feature = ogr.Feature(layer.GetLayerDefn())
+        green = green_res["green"][i]
+        lat = green_res["lat"][i]
+        long = green_res["long"][i]
+
+        feature.SetField(green_key, green)
+        feature.SetField("Latitude", lat)
+        feature.SetField("Longitude", long)
+
+        point = ogr.CreateGeometryFromWkt(f"Point({long} {lat})")
+        feature.SetGeometry(point)
+        layer.CreateFeature(feature)
+        feature = None
+
+    data_source = None
 
 
 def _empty_green_res():

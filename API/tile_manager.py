@@ -144,7 +144,7 @@ class TileManager(object):
             )
         )
 
-        vario_kwargs = _semivariance(self.green_mat, plot=True,
+        vario_kwargs = _semivariance(self.green_mat, plot=False,
                                      variogram_model="exponential")
 #         krige_greenery(self.all_green_res, None, None)
 

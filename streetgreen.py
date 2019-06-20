@@ -11,7 +11,7 @@ import os
 
 from utils.selection import select_bbox, select_seg_model, select_green_model
 from API.tile_manager import TileManager
-from utils.mapping import create_map
+from utils.mapping import create_map, green_res_to_shp
 
 
 def main():
@@ -108,7 +108,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
                            cubic_pictures=cubic_pictures,
                            **green_kwargs)
 
-    tile_man.green_direct(prepare_only=prepare_only)
+    green_res = tile_man.green_direct(prepare_only=prepare_only)
 
     if prepare_only or skip_overlay:
         return
@@ -118,10 +118,13 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     overlay_file = f"{bbox_str}_{key}.html"
     overlay_fp = os.path.join(overlay_dir, overlay_file)
     geo_tiff_fp = os.path.join(overlay_dir, f"{bbox_str}_{key}.tif")
+    shape_fp = os.path.join(overlay_dir, f"{bbox_str}_{key}.shp")
     os.makedirs(overlay_dir, exist_ok=True)
 
     create_map(overlay, html_file=overlay_fp)
     overlay.write_geotiff(geo_tiff_fp)
+    green_res_to_shp(green_res, tile_man.green_model.id(one_class=True),
+                     shape_fp)
 
 
 if __name__ == "__main__":
