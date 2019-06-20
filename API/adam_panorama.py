@@ -35,6 +35,7 @@ class AdamPanorama(BasePanorama):
         self.pano_url = meta_data["equirectangular_url"]
         self.filename = "panorama.jpg"
         self.panorama_fp = os.path.join(self.data_dir, self.filename)
+        os.makedirs(self.data_dir, exist_ok=True)
         self.meta_fp = _meta_fp(self.panorama_fp)
         if not os.path.exists(self.panorama_fp):
             urllib.request.urlretrieve(self.pano_url, self.panorama_fp)

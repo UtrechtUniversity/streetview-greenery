@@ -96,7 +96,8 @@ class TileManager(object):
         self.all_green_res = None
         self.map_key = get_green_key(self.tile_list[0][0].pano_class,
                                      self.seg_model.id(),
-                                     self.green_model.id(), self.grid_level)
+                                     self.green_model.id(one_class=True),
+                                     self.grid_level)
 
     def green_direct(self, load_kwargs={}, **kwargs):
         all_green_res = {
@@ -104,6 +105,7 @@ class TileManager(object):
             "lat": [],
             "long": [],
         }
+        new_empty_tiles = {}
         self.green_mat = [[] for _ in range(self.n_tiles_y)]
         for iy in range(len(self.green_mat)):
             self.green_mat[iy] = [{} for _ in range(self.n_tiles_x)]
@@ -112,9 +114,22 @@ class TileManager(object):
             tile, ix, iy = self.tile_list.pop(0)
             new_green_res = tile.green_direct(load_kwargs=load_kwargs,
                                               **kwargs)
+            if len(new_green_res["green"]) == 0:
+                new_empty_tiles[tile.tile_name] = True
             _extend_green_res(all_green_res, new_green_res)
             self.green_mat[iy][ix] = new_green_res
         self.all_green_res = all_green_res
+
+        if len(new_empty_tiles) != 0:
+            try:
+                with open(self.empty_fp, "r") as f:
+                    self.empty_tiles = json.load(f)
+            except FileNotFoundError:
+                self.empty_tiles = {}
+            self.empty_tiles.update(new_empty_tiles)
+            with open(self.empty_fp, "w") as f:
+                json.dump(self.empty_tiles, f, indent=2)
+
         return all_green_res
 
     def krige_map(self, window_range=1, overlay_name="greenery", upscale=2,
@@ -129,7 +144,7 @@ class TileManager(object):
             )
         )
 
-        vario_kwargs = _semivariance(self.green_mat, plot=False,
+        vario_kwargs = _semivariance(self.green_mat, plot=True,
                                      variogram_model="exponential")
 #         krige_greenery(self.all_green_res, None, None)
 

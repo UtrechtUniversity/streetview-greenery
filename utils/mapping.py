@@ -4,6 +4,8 @@ import folium
 import numpy as np
 import json
 from json.decoder import JSONDecodeError
+import gdal
+import osr
 
 
 class MapImageOverlay:
@@ -27,7 +29,7 @@ class MapImageOverlay:
             with open(file_fp, "r") as f:
                 gr_dict = json.load(f)
         except JSONDecodeError:
-            raise FileNotFoundError("Error reading file {file_fp}")
+            raise FileNotFoundError(f"Error reading file {file_fp}")
         self.greenery = np.array(gr_dict['greenery'])
         if 'alpha_map' in gr_dict:
             self.alpha_map = np.array(gr_dict['alpha_map'])
@@ -54,6 +56,29 @@ class MapImageOverlay:
 
         with open(file_fp, "w") as f:
             json.dump(gr_dict, f, indent=2)
+
+    def write_geotiff(self, file_fp):
+        proj = osr.SpatialReference()
+        proj.ImportFromEPSG(4326)
+        driver = gdal.GetDriverByName("GTiff")
+        [rows, cols] = self.greenery.shape
+        print(file_fp, rows, cols)
+        geodata = driver.Create(file_fp, rows, cols, 1, eType=gdal.GDT_Float32)
+        xmin = self.long_grid.min()
+        xres = (self.long_grid.max()-self.long_grid.min())/(self.long_grid.shape[0])
+        yres = (self.lat_grid.max()-self.lat_grid.min())/(self.lat_grid.shape[0])
+        ymin = self.lat_grid.min()
+        geotransform = (
+            xmin, xres, 0, ymin, 0, yres
+        )
+        geodata.SetGeoTransform(geotransform)
+        geodata.SetProjection(proj.ExportToWkt())
+        alpha_zero = np.where(self.alpha_map == 0)
+        new_green_map = np.copy(self.greenery)
+        new_green_map[alpha_zero] = 99999
+        geodata.GetRasterBand(1).WriteArray(new_green_map)
+        geodata.GetRasterBand(1).SetNoDataValue(99999)
+        geodata.FlushCache()
 
 
 def _lat_bounds(lat_grid, long_grid):

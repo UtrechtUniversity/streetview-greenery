@@ -117,9 +117,11 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     overlay_dir = os.path.join("data.amsterdam", "maps")
     overlay_file = f"{bbox_str}_{key}.html"
     overlay_fp = os.path.join(overlay_dir, overlay_file)
+    geo_tiff_fp = os.path.join(overlay_dir, f"{bbox_str}_{key}.tif")
     os.makedirs(overlay_dir, exist_ok=True)
 
     create_map(overlay, html_file=overlay_fp)
+    overlay.write_geotiff(geo_tiff_fp)
 
 
 if __name__ == "__main__":

@@ -66,8 +66,7 @@ def json_to_b64(seg_res):
 
     try:
         import pybase64
-        data_64 = pybase64.b64encode(compressed_data, validate=True
-                                     ).decode('ascii')
+        data_64 = pybase64.b64encode(compressed_data).decode('ascii')
     except ImportError:
         data_64 = base64.b64encode(compressed_data).decode('ascii')
     return data_64
@@ -79,13 +78,12 @@ def b64_to_json(data_64):
         decoded_data = pybase64.b64decode(data_64, validate=True)
     except ImportError:
         decoded_data = base64.b64decode(data_64)
-
     serial_seg_res = json.loads(
         zlib.decompress(decoded_data)
     )
 
     seg_res = {
-        'seg_map': np.array(serial_seg_res['seg_map'], dtype=int),
+        'seg_map': np.array(serial_seg_res['seg_map']),
         'color_map': (
             np.array(serial_seg_res['color_map'][0]),
             np.array(serial_seg_res['color_map'][1])

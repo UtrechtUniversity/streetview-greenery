@@ -148,6 +148,7 @@ class AdamPanoramaTile(AdamPanoramaManager):
                 return _empty_green_res()
 #             self.seg_analysis(**seg_kwargs)
             green_res = self.green_analysis(**green_kwargs)
-            with open(green_fp, "w") as f:
-                json.dump(green_res, f, indent=2)
+            if len(green_res["green"]) > 0:
+                with open(green_fp, "w") as f:
+                    json.dump(green_res, f, indent=2)
         return green_res

@@ -11,11 +11,16 @@ def tiff_to_overlay(tiff_fp, name=None, min_green=-0.03, max_green=None):
     if name is None:
         name = tiff_fp
     ds = gdal.Open(tiff_fp)
+    print(ds.GetGeoTransform())
     prj = ds.GetProjection()
     srs = osr.SpatialReference(wkt=prj)
-    warped_ds = gdal.Warp('', ds, dstSRS='EPSG:4326', format='VRT')
+    warped_ds = gdal.Warp('', ds, dstSRS='EPSG:4326', format='VRT',
+                          width=ds.RasterXSize, height=ds.RasterYSize)
     warped_array = np.array(warped_ds.GetRasterBand(1).ReadAsArray())
     warped_array = np.flip(warped_array, axis=0)
+    NO_DATA = warped_ds.GetRasterBand(1).GetNoDataValue()
+    alpha_map = np.ones(warped_array.shape, dtype=np.float)
+    alpha_map[np.where(warped_array == NO_DATA)] = 0.0
 
     ulx, xres, _, uly, _, yres = warped_ds.GetGeoTransform()
     lrx = ulx + (warped_ds.RasterXSize * xres)
@@ -32,7 +37,8 @@ def tiff_to_overlay(tiff_fp, name=None, min_green=-0.03, max_green=None):
                               long_grid=long_grid,
                               min_green=min_green, name=name,
                               max_green=max_green,
-                              cmap='Greys')
+                              cmap="gist_rainbow",
+                              alpha_map=alpha_map)
     return overlay
 #     create_map(warped_array, , html_file="ndvi.html",
 #                min_green=min_green, max_green=)
