@@ -32,9 +32,9 @@ def total_size(o, handlers={}, verbose=False):
                     set: iter,
                     frozenset: iter,
                     }
-    all_handlers.update(handlers)     # user handlers take precedence
-    seen = set()                      # track which object id's have already been seen
-    default_size = getsizeof(0)       # estimate sizeof object without __sizeof__
+    all_handlers.update(handlers)   # user handlers take precedence
+    seen = set()                    # track already seen object id's
+    default_size = getsizeof(0)     # estimate sizeof object without __sizeof__
 
     def sizeof(o):
         if id(o) in seen:       # do not double count the same object
@@ -54,7 +54,11 @@ def total_size(o, handlers={}, verbose=False):
     return sizeof(o)
 
 
-def json_to_b64(seg_res):
+def dict_to_b64(seg_res):
+    """ Convert segmentation results in dictionary form to base64.
+        Uses gzip compression to save disk space.
+        If installed, use pybase64, since its performance is better.
+    """
     serial_seg_res = {
         'seg_map': seg_res['seg_map'].tolist(),
         'color_map': (
@@ -72,7 +76,8 @@ def json_to_b64(seg_res):
     return data_64
 
 
-def b64_to_json(data_64):
+def b64_to_dict(data_64):
+    """ Convert segmentation results in base64 form to dictionary. """
     try:
         import pybase64
         decoded_data = pybase64.b64decode(data_64, validate=True)

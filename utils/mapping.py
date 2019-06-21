@@ -26,6 +26,7 @@ class MapImageOverlay:
             self.name = name
 
     def load(self, file_fp):
+        "Load the overlay from a .json file."
         try:
             with open(file_fp, "r") as f:
                 gr_dict = json.load(f)
@@ -44,6 +45,7 @@ class MapImageOverlay:
         self.name = gr_dict['name']
 
     def save(self, file_fp):
+        "Save the overlay to a .json file."
         gr_dict = {}
         gr_dict['greenery'] = self.greenery.tolist()
         if self.alpha_map is not None:
@@ -59,11 +61,13 @@ class MapImageOverlay:
             json.dump(gr_dict, f, indent=2)
 
     def write_geotiff(self, file_fp):
+        "Write the map overlay to a geoTiff file."
+
+        # Assume that internal coordinates are WGS 84.
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(4326)
         driver = gdal.GetDriverByName("GTiff")
         [rows, cols] = self.greenery.shape
-        print(file_fp, rows, cols)
         geodata = driver.Create(file_fp, rows, cols, 1, eType=gdal.GDT_Float32)
         xmin = self.long_grid.min()
         xres = (self.long_grid.max()-self.long_grid.min())/(self.long_grid.shape[0])
@@ -74,6 +78,8 @@ class MapImageOverlay:
         )
         geodata.SetGeoTransform(geotransform)
         geodata.SetProjection(proj.ExportToWkt())
+
+        # For transparent pictures, set them to no data in the tiff file.
         alpha_zero = np.where(self.alpha_map == 0)
         new_green_map = np.copy(self.greenery)
         new_green_map[alpha_zero] = 99999
@@ -83,6 +89,7 @@ class MapImageOverlay:
 
 
 def _lat_bounds(lat_grid, long_grid):
+    "Create lattice bounds from the grid."
     bounds = [
         [
             lat_grid.min(),
@@ -97,11 +104,28 @@ def _lat_bounds(lat_grid, long_grid):
 
 
 def _cmap2rgb(step, cmap="gist_rainbow"):
+    "Get a RGB color from a color map from a step in [0,255]."
     from matplotlib import cm
     return getattr(cm, cmap)(step, bytes=True)
 
 
-def green_map_to_img(green_i, alpha_i, min_green, max_green, cmap="gist_rainbow"):
+def green_map_to_img(green_i, alpha_i, min_green, max_green,
+                     cmap="gist_rainbow"):
+    """ Create an RGB image from a greenery map.
+
+    Arguments:
+    ----------
+    green_i: np.array
+        2D Array of all greenery values.
+    alpha_i: np.array
+        2D Array of transparency [alpha] values with same shape.
+    min_green: float
+        Lowest value for greenery measure. Anything below is transparent.
+    max_green: float
+        Highest value for greenery measure. Anything above is transparent.
+    cmap: str
+        Color map to use for map [see matplotlib documentation for choices].
+    """
     delta = (max_green-min_green)
     nx = green_i.shape[0]
     ny = green_i.shape[1]
@@ -109,9 +133,11 @@ def green_map_to_img(green_i, alpha_i, min_green, max_green, cmap="gist_rainbow"
     green_rgba = np.zeros(green_i.shape+(4,), dtype=np.uint8)
     for irow, row in enumerate(green_i):
         for icol, col in enumerate(row):
+            # The rows should be in reverse order.
             if col < min_green or col > max_green:
                 green_rgba[nx-irow-1][icol] = np.zeros(4)
             else:
+                # Convert green value into something in [0, 255]
                 step = int(256*(col-min_green)/delta)
                 green_rgba[nx-irow-1][icol] = np.array(_cmap2rgb(step, cmap))
                 if alpha_i is not None:
@@ -122,6 +148,15 @@ def green_map_to_img(green_i, alpha_i, min_green, max_green, cmap="gist_rainbow"
 
 
 def create_map(green_layers, html_file="index.html"):
+    """ Create an HTML map from map overlays.
+
+    Arguments:
+    ----------
+    green_layers: list, MapOverlay
+        Either a single overlay or a list of overlays.
+    html_file:
+        Destination file for HTML map.
+    """
     if isinstance(green_layers, MapImageOverlay):
         green_layers = [green_layers]
 
@@ -136,6 +171,7 @@ def create_map(green_layers, html_file="index.html"):
         name = gr_layer.name
 
         if i == 0:
+            # Initialize map
             look_at = [lat_grid.mean(), long_grid.mean()]
             m = folium.Map(location=look_at, zoom_start=15, control_scale=True)
 
@@ -150,10 +186,14 @@ def create_map(green_layers, html_file="index.html"):
 
 
 def green_res_to_shp(green_res, green_key, shape_fp):
+    " Convert greenery measurements to shape file. "
     driver = ogr.GetDriverByName("ESRI Shapefile")
     data_source = driver.CreateDataSource(shape_fp)
+
+    # Internal coordinates are WGS 84
     srs = osr.SpatialReference()
     srs.ImportFromEPSG(4326)
+
     layer = data_source.CreateLayer("greenery", srs, ogr.wkbPoint)
     layer.CreateField(ogr.FieldDefn(green_key, ogr.OFTReal))
     layer.CreateField(ogr.FieldDefn("Latitude", ogr.OFTReal))
@@ -169,11 +209,13 @@ def green_res_to_shp(green_res, green_key, shape_fp):
         feature.SetField("Latitude", lat)
         feature.SetField("Longitude", long)
 
+        # Add point geometry.
         point = ogr.CreateGeometryFromWkt(f"Point({long} {lat})")
         feature.SetGeometry(point)
         layer.CreateFeature(feature)
         feature = None
 
+    # Close/write to file.
     data_source = None
 
 

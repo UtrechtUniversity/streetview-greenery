@@ -3,24 +3,26 @@
 import os
 
 import numpy as np
-import matplotlib
-
-from API import AdamPanoramaManager
-from utils.selection import select_bbox, select_seg_model, select_green_model
-import matplotlib.pyplot as plt
-from models.deeplab import plot_segmentation
-from greenery.visualization import plot_greenery
-from utils.mapping import create_map
-from API.tile_manager import TileManager
 from sklearn.linear_model.base import LinearRegression
+import matplotlib.pyplot as plt
+
+from utils.selection import select_bbox, select_seg_model, select_green_model
+from greenery.visualization import plot_greenery
+from API.tile_manager import TileManager
 
 
 def _del_green(green_res, i):
+    "Delete a single item from green results."
     for key in green_res:
         del green_res[key][i]
 
 
 def _remove_missing(green_res_x, green_res_y):
+    """ To be able to compare among different sources (panorama vs cubic),
+        We have to align the data. Here, the assumption is that they are
+        already nearly aligned, with a few pictures missing here and there.
+        The ones available in one, that are missing in the other are deleted.
+    """
     i = 0
     while i < len(green_res_x["green"]):
         if green_res_x["lat"][i] == green_res_y["lat"][i]:
@@ -40,6 +42,11 @@ def _remove_missing(green_res_x, green_res_y):
 
 
 def compare_green_measures(X_measure, y_measure, **kwargs):
+    """ Compare/plot two different green measures with the same segmentation
+        engine/settings. Apply simple linear regression to figure out if there
+        is correlation between the different variables.
+    """
+
     X_green_kwargs = select_green_model(X_measure)
     y_green_kwargs = select_green_model(y_measure)
 
@@ -72,6 +79,11 @@ def compare_green_measures(X_measure, y_measure, **kwargs):
 
 
 def compare_panorama_cubic(greenery_measure="vegetation", **kwargs):
+    """ Compare/plot the segmentation results of panoramic and cubic
+        images to each other. Also use linear regression to determine
+        how they relate to each other.
+    """
+
     green_kwargs = select_green_model(greenery_measure)
 
     panorama_tiler = TileManager(cubic_pictures=False, **kwargs, **green_kwargs)
@@ -102,6 +114,13 @@ def compare_panorama_cubic(greenery_measure="vegetation", **kwargs):
 
 
 def main():
+    """ There is one CLI argument currently available:
+        the type of analysis to perform. This takes the form cubic-{class}, or
+        {class1}-{class2}, with {class} being one of the cityscape classes,
+        such as "vegetation", "road", "building", etc.
+        Adjust area, grid_level, segmentation model directly in the script.
+    """
+
     area = "oosterpark"
     model = "deeplab-mobilenet"
     grid_level = 3

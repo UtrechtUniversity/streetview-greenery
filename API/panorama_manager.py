@@ -83,21 +83,17 @@ class BasePanoramaManager(ABC):
         os.makedirs(dest_dir, exist_ok=True)
 
         self.meta_data = [self.meta_data[i] for i in load_ids]
-#         print("Loading panoramas..")
         for meta in self.meta_data:
             try:
                 self.panoramas.append(self.new_panorama(
                     meta_data=meta, data_dir=dest_dir))
             except HTTPError:
                 pass
-#                 print(f"Error retrieving panorama data, skipping.")
-#                 print(meta)
             if pbar is not None:
                 pbar.update()
 
     def seg_analysis(self, pbar=None, **kwargs):
         " Do segmentation analysis. "
-#         print("Doing segmentation analysis..")
         for panorama in self.panoramas:
             panorama.seg_analysis(seg_model=self.seg_model, **kwargs)
             if pbar is not None:
