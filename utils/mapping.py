@@ -4,9 +4,9 @@ import folium
 import numpy as np
 import json
 from json.decoder import JSONDecodeError
-import gdal
-import osr
-import osgeo.ogr as ogr
+# import gdal
+# import osr
+# import osgeo.ogr as ogr
 
 
 class MapImageOverlay:
@@ -62,6 +62,9 @@ class MapImageOverlay:
 
     def write_geotiff(self, file_fp):
         "Write the map overlay to a geoTiff file."
+
+        import gdal
+        import osr
 
         # Assume that internal coordinates are WGS 84.
         proj = osr.SpatialReference()
@@ -187,6 +190,9 @@ def create_map(green_layers, html_file="index.html"):
 
 def green_res_to_shp(green_res, green_key, shape_fp):
     " Convert greenery measurements to shape file. "
+    import osgeo.ogr as ogr
+    import osr
+
     driver = ogr.GetDriverByName("ESRI Shapefile")
     data_source = driver.CreateDataSource(shape_fp)
 
