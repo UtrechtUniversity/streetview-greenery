@@ -1,0 +1,12 @@
+Pillow
+numpy
+matplotlib
+tensorflow
+urllib
+pykrige
+scipy
+tqdm
+requests
+gdal==2.1.3
+folium
+pybase64
