@@ -2,7 +2,6 @@ Pillow
 numpy
 matplotlib
 tensorflow
-urllib
 pykrige
 scipy
 tqdm
