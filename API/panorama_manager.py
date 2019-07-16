@@ -112,6 +112,7 @@ class BasePanoramaManager(ABC):
             'green': [],
             'lat': [],
             'long': [],
+            'timestamp': [],
         }
 #         print("Doing greenery analysis..")
         for panorama in self.panoramas:
@@ -120,6 +121,7 @@ class BasePanoramaManager(ABC):
             green_dict["green"].append(green_frac)
             green_dict["lat"].append(panorama.latitude)
             green_dict["long"].append(panorama.longitude)
+            green_dict["timestamp"].append(panorama.timestamp)
             if pbar is not None:
                 pbar.update()
         return green_dict

@@ -56,7 +56,6 @@ class ClassPercentage(object):
         tot_frac = self.tot_frac[str(shape)]
 
         counts = np.bincount(seg_map.reshape(-1), weights=weights)
-#         print(np.sum(counts/tot_frac))
         return dict(zip(names, counts/tot_frac))
 
     def id(self, one_class=False):

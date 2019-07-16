@@ -104,7 +104,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     cubic_pictures = not use_panorama
 
     tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
-                           job_id=job_id, **seg_kwargs, 
+                           job_id=job_id, **seg_kwargs,
                            cubic_pictures=cubic_pictures,
                            **green_kwargs)
 
@@ -123,6 +123,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
 
     create_map(overlay, html_file=overlay_fp)
     overlay.write_geotiff(geo_tiff_fp)
+
     green_res_to_shp(green_res, tile_man.green_model.id(one_class=True),
                      shape_fp)
 

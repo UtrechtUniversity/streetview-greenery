@@ -54,6 +54,7 @@ class AdamPanoramaCubic(BasePanorama):
             "front": "f",
             "back": "b",
             # "up": "u",  # Up direction is problematic for machine learning.
+            # "down": "d",  # Down direction is not very useful.
             "left": "l",
             "right": "r",
         }
@@ -72,6 +73,7 @@ class AdamPanoramaCubic(BasePanorama):
         self.latitude = meta_data["geometry"]["coordinates"][1]
         self.longitude = meta_data["geometry"]["coordinates"][0]
         self.id = meta_data["pano_id"]
+        self.timestamp = meta_data["timestamp"]
 
     def fp_from_meta(self, meta_data):
         " Generate the meta and picture filenames. "

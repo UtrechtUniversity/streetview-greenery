@@ -29,6 +29,7 @@ class AdamPanorama(BasePanorama):
         self.latitude = meta_data["geometry"]["coordinates"][1]
         self.longitude = meta_data["geometry"]["coordinates"][0]
         self.id = meta_data["pano_id"]
+        self.timestamp = meta_data["timestamp"]
 
     def fp_from_meta(self, meta_data):
         " Generate the meta and picture filenames. "

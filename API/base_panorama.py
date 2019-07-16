@@ -5,7 +5,7 @@ from os.path import splitext, join
 from abc import ABC
 import json
 import numpy as np
-from utils.size import b64_to_json, json_to_b64
+from utils.size import b64_to_dict, dict_to_b64
 from API.idgen import get_green_key
 
 
@@ -40,6 +40,7 @@ class BasePanorama(ABC):
         self.temporary = False
         self.longitude = None
         self.latitude = None
+        self.timestamp = None
         self.data_src = data_src
 
         self.fp_from_meta(meta_data)
@@ -145,7 +146,7 @@ class BasePanorama(ABC):
                 zipped_seg_res = json.load(f)
                 for name in zipped_seg_res:
                     zsr = zipped_seg_res[name]
-                    usr = b64_to_json(zsr)
+                    usr = b64_to_dict(zsr)
                     self.all_seg_res[name] = usr
         except FileNotFoundError:
             pass
@@ -153,7 +154,7 @@ class BasePanorama(ABC):
     def save_segmentation(self, segment_fp):
         zipped_seg_res = {}
         for name in self.all_seg_res:
-            zsr = json_to_b64(self.all_seg_res[name])
+            zsr = dict_to_b64(self.all_seg_res[name])
             zipped_seg_res[name] = zsr
 
 #         print(zipped_seg_res)
@@ -169,6 +170,7 @@ class BasePanorama(ABC):
             "greenery": self.greenery,
             "latitude": self.latitude,
             "longitude": self.longitude,
+            "timestamp": self.timestamp,
             "meta_data": self.meta_data,
         }
         return log_dict
@@ -181,4 +183,5 @@ class BasePanorama(ABC):
         self.greenery = log_dict["greenery"]
         self.latitude = log_dict["latitude"]
         self.longitude = log_dict["longitude"]
+        self.timestamp = log_dict["timestamp"]
         self.meta_data = log_dict["meta_data"]

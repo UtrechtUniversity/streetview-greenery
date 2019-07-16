@@ -198,16 +198,19 @@ def green_res_to_shp(green_res, green_key, shape_fp):
     layer.CreateField(ogr.FieldDefn(green_key, ogr.OFTReal))
     layer.CreateField(ogr.FieldDefn("Latitude", ogr.OFTReal))
     layer.CreateField(ogr.FieldDefn("Longitude", ogr.OFTReal))
+    layer.CreateField(ogr.FieldDefn("Timestamp"), ogr.OFTDateTime)
 
     for i in range(len(green_res["green"])):
         feature = ogr.Feature(layer.GetLayerDefn())
         green = green_res["green"][i]
         lat = green_res["lat"][i]
         long = green_res["long"][i]
+        timestamp = green_res["timestamp"][i]
 
         feature.SetField(green_key, green)
         feature.SetField("Latitude", lat)
         feature.SetField("Longitude", long)
+        feature.SetField("Timestamp", timestamp)
 
         # Add point geometry.
         point = ogr.CreateGeometryFromWkt(f"Point({long} {lat})")
@@ -224,6 +227,7 @@ def _empty_green_res():
         "green": [],
         "lat": [],
         "long": [],
+        "timestamp": [],
     }
     return green_res
 

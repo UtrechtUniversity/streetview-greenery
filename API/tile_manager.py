@@ -100,11 +100,8 @@ class TileManager(object):
                                      self.grid_level)
 
     def green_direct(self, load_kwargs={}, **kwargs):
-        all_green_res = {
-            "green": [],
-            "lat": [],
-            "long": [],
-        }
+        all_green_res = _empty_green_res()
+
         new_empty_tiles = {}
         self.green_mat = [[] for _ in range(self.n_tiles_y)]
         for iy in range(len(self.green_mat)):
