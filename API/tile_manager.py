@@ -94,10 +94,13 @@ class TileManager(object):
         self.y_start = y_start + i_min_y*dy
         self.green_mat = None
         self.all_green_res = None
-        self.map_key = get_green_key(self.tile_list[0][0].pano_class,
-                                     self.seg_model.id(),
-                                     self.green_model.id(one_class=True),
-                                     self.grid_level)
+        if len(self.tile_list):
+            self.map_key = get_green_key(self.tile_list[0][0].pano_class,
+                                         self.seg_model.id(),
+                                         self.green_model.id(one_class=True),
+                                         self.grid_level)
+        else:
+            self.map_key = "Unknown"
 
     def green_direct(self, load_kwargs={}, **kwargs):
         all_green_res = _empty_green_res()
@@ -111,7 +114,7 @@ class TileManager(object):
             tile, ix, iy = self.tile_list.pop(0)
             new_green_res = tile.green_direct(load_kwargs=load_kwargs,
                                               **kwargs)
-            if len(new_green_res["green"]) == 0:
+            if len(tile.panoramas) == 0:
                 new_empty_tiles[tile.tile_name] = True
             _extend_green_res(all_green_res, new_green_res)
             self.green_mat[iy][ix] = new_green_res
