@@ -66,8 +66,9 @@ class AdamPanoramaCubic(BasePanorama):
             data_dir=data_dir,
             data_src=data_src,
         )
+        self.segment_fp = os.path.join(self.data_dir, f"segments_cubic.json")
 
-    def parse(self, meta_data):
+    def parse_meta(self, meta_data):
         " Get some universally used data. "
         self.meta_data = meta_data
         self.latitude = meta_data["geometry"]["coordinates"][1]
@@ -78,7 +79,7 @@ class AdamPanoramaCubic(BasePanorama):
     def fp_from_meta(self, meta_data):
         " Generate the meta and picture filenames. "
 
-        self.pano_url = []
+        self.pano_url = {}
         self.panorama_dir = self.data_dir
         self.panorama_fp = {}
         self.meta_fp = os.path.join(self.data_dir, "meta_data.json")
@@ -88,20 +89,21 @@ class AdamPanoramaCubic(BasePanorama):
         # Download the different sides of the cube meta+img.
         for side in self.sides:
             abrev = self.sides[side]
-            self.pano_url.append(meta_data["cubic_img_baseurl"] +
-                                 f"1/{abrev}/0/0.jpg")
+            self.pano_url[side] = meta_data["cubic_img_baseurl"]
+            self.pano_url[side] += f"1/{abrev}/0/0.jpg"
             self.panorama_fp[side] = os.path.join(
                 self.panorama_dir, side+".jpg")
 
+    def download(self):
+        for side in self.pano_url:
             if not os.path.exists(self.panorama_fp[side]):
-                urllib.request.urlretrieve(self.pano_url[-1],
+#                 print(f"Downoading {self.panorama_fp[side]} from {self.pano_url[side]}")
+                urllib.request.urlretrieve(self.pano_url[side],
                                            self.panorama_fp[side])
 
     def seg_analysis(self, seg_model, show=False, recalc=False):
         "Do segmentation analysis, if possible load from file."
         model_id = seg_model.id()
-        self.segment_fp = os.path.join(self.data_dir,
-                                       f"segments_cubic_{model_id}.json")
 
         self.load_segmentation(self.segment_fp)
         if len(self.all_seg_res) < 1:
@@ -109,6 +111,24 @@ class AdamPanoramaCubic(BasePanorama):
             self.save_segmentation(self.segment_fp)
         elif show:
             self.show()
+
+    def seg_to_green(self, seg_res, green_model):
+        n_pano = len(seg_res)
+        seg_frac = {}
+        # Iterate over all phot directions (left, right, etc.)
+        for side in seg_res:
+            side_seg_res = seg_res[side]
+            seg_map = np.array(side_seg_res['seg_map'])
+            names = np.array(side_seg_res['color_map'][0])
+            new_frac = green_model.seg_fractions(seg_map, names)
+
+            # Add the result to the average.
+            for class_name in new_frac:
+                if class_name in seg_frac:
+                    seg_frac[class_name] += new_frac[class_name]/n_pano
+                else:
+                    seg_frac[class_name] = new_frac[class_name]/n_pano
+        return seg_frac
 
     def green_analysis(self, seg_model, green_model):
         "Do greenery analysis. If possible load from file."

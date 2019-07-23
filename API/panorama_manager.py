@@ -11,6 +11,7 @@ from models import DeepLabModel
 from abc import ABC
 from greenery import ClassPercentage
 from urllib.error import HTTPError
+from utils.mapping import _empty_green_res
 
 
 class BasePanoramaManager(ABC):
@@ -124,4 +125,43 @@ class BasePanoramaManager(ABC):
             green_dict["timestamp"].append(panorama.timestamp)
             if pbar is not None:
                 pbar.update()
+        return green_dict
+
+    def green_pipe(self, pbar=None):
+        """
+        Do greenery analysis.
+
+        Returns
+        -------
+        dict:
+            Dictionary that contains greenery points at (lat,long).
+        """
+        green_dict = _empty_green_res()
+        broken_fp = os.path.join(self.data_dir, "broken_links.json")
+        try:
+            with open(broken_fp, "r") as f:
+                broken_links = json.load(f)
+        except FileNotFoundError:
+            broken_links = {}
+
+        new_broken_links = False
+#         print("Doing greenery analysis..")
+        for panorama in self.panoramas:
+            if panorama.id in broken_links:
+                continue
+            try:
+                green_frac = panorama.green_pipe(seg_model=self.seg_model,
+                                                 green_model=self.green_model)
+                green_dict["green"].append(green_frac)
+                green_dict["lat"].append(panorama.latitude)
+                green_dict["long"].append(panorama.longitude)
+                green_dict["timestamp"].append(panorama.timestamp)
+            except HTTPError:
+                new_broken_links = True
+                broken_links[panorama.id] = True
+            if pbar is not None:
+                pbar.update()
+        if new_broken_links:
+            with open(broken_fp, "w") as fp:
+                json.dump(broken_links, fp)
         return green_dict

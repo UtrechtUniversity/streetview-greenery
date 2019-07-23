@@ -114,7 +114,7 @@ class TileManager(object):
             tile, ix, iy = self.tile_list.pop(0)
             new_green_res = tile.green_direct(load_kwargs=load_kwargs,
                                               **kwargs)
-            if len(tile.panoramas) == 0:
+            if len(tile.panoramas) and new_green_res['green'] == 0:
                 new_empty_tiles[tile.tile_name] = True
             _extend_green_res(all_green_res, new_green_res)
             self.green_mat[iy][ix] = new_green_res

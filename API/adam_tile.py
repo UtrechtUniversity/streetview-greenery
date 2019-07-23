@@ -146,8 +146,10 @@ class AdamPanoramaTile(AdamPanoramaManager):
             self.load(**load_kwargs)
             if prepare_only:
                 return _empty_green_res()
+#             if prepare_only:
+#                 return _empty_green_res()
 #             self.seg_analysis(**seg_kwargs)
-            green_res = self.green_analysis(**green_kwargs)
+            green_res = self.green_pipe(**green_kwargs)
             if len(green_res["green"]) > 0:
                 with open(green_fp, "w") as f:
                     json.dump(green_res, f, indent=2)

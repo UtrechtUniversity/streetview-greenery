@@ -42,15 +42,19 @@ class BasePanorama(ABC):
         self.latitude = None
         self.timestamp = None
         self.data_src = data_src
+        self.id = "Unknown"
 
         self.fp_from_meta(meta_data)
 
+        self.is_downloaded = False
+
         # Try to load the meta-data + results from file.
         try:
-            self.load(self.meta_fp)
+            self.load_meta(self.meta_fp)
         except FileNotFoundError:
-            self.parse(self.meta_data)
-            self.save()
+            self.parse_meta(self.meta_data)
+            self.save_meta()
+
         self.segment_fp = join(data_dir, "segments.json")
         self.log_dict = self.todict()
         self.all_green_res = {}
@@ -70,12 +74,20 @@ class BasePanorama(ABC):
             Ignore the cached results.
         """
         model_id = seg_model.id()
-        self.segment_fp = join(self.data_dir, "segment.json")
         self.load_segmentation(self.segment_fp)
         if model_id not in self.all_seg_res or show or recalc:
-#             print(f"{model_id}, {show}, {recalc}, {self.panorama_fp}")
             self.all_seg_res[model_id] = self.seg_run(seg_model, show)
-#             print(self.all_seg_res)
+            self.save_segmentation(self.segment_fp)
+
+    def seg_pipe(self, seg_model, show=False, recalc=False):
+        seg_id = seg_model.id()
+        self.segment_fp = join(self.data_dir, "segment.json")
+        self.load_segmentation(self.segment_fp)
+
+        if seg_id not in self.all_seg_res or show or recalc:
+            if not self.is_downloaded:
+                self.download()
+            self.all_seg_res[seg_id] = self.seg_run(seg_model, show)
             self.save_segmentation(self.segment_fp)
 
     def green_analysis(self, seg_model, green_model):
@@ -114,6 +126,25 @@ class BasePanorama(ABC):
             self.save_greenery(green_fp)
         return green_model.test(self.all_green_res[key])
 
+    def green_pipe(self, seg_model, green_model):
+        green_id = green_model.id()
+
+        # Run the segmentation model if not already done.
+        seg_id = seg_model.id()
+
+        green_fp = join(self.data_dir, "greenery.json")
+        green_key = get_green_key(self.__class__, seg_id, green_id)
+
+        self.load_greenery(green_fp)
+        if green_key not in self.all_green_res:
+            if seg_id not in self.all_seg_res:
+                self.seg_pipe(seg_model)
+            green_res = self.seg_to_green(self.all_seg_res[seg_id],
+                                          green_model)
+            self.all_green_res[green_key] = green_res
+            self.save_greenery(green_fp)
+        return green_model.test(self.all_green_res[green_key])
+
     def load_greenery(self, green_fp):
         self.all_green_res = {}
         try:
@@ -126,13 +157,13 @@ class BasePanorama(ABC):
         with open(green_fp, "w") as fp:
             json.dump(self.all_green_res, fp, indent=2)
 
-    def save(self):
+    def save_meta(self):
         """ Save the logs to a file. """
         log_dict = self.todict()
         with open(self.meta_fp, "w") as f:
             json.dump(log_dict, f, indent=2)
 
-    def load(self, meta_fp):
+    def load_meta(self, meta_fp):
         """ Load the logs from a file. """
         self.meta_fp = meta_fp
         with open(meta_fp, "r") as f:
@@ -144,18 +175,23 @@ class BasePanorama(ABC):
         try:
             with open(segment_fp, "r") as f:
                 zipped_seg_res = json.load(f)
-                for name in zipped_seg_res:
-                    zsr = zipped_seg_res[name]
-                    usr = b64_to_dict(zsr)
-                    self.all_seg_res[name] = usr
+                for seg_id in zipped_seg_res:
+                    self.all_seg_res[seg_id] = {}
+                    for name in zipped_seg_res[seg_id]:
+                        print(zipped_seg_res)
+                        zsr = zipped_seg_res[seg_id][name]
+                        usr = b64_to_dict(zsr)
+                        self.all_seg_res[seg_id][name] = usr
         except FileNotFoundError:
             pass
 
     def save_segmentation(self, segment_fp):
         zipped_seg_res = {}
-        for name in self.all_seg_res:
-            zsr = dict_to_b64(self.all_seg_res[name])
-            zipped_seg_res[name] = zsr
+        for seg_id in self.all_seg_res:
+            zipped_seg_res[seg_id] = {}
+            for name in self.all_seg_res[seg_id]:
+                zsr = dict_to_b64(self.all_seg_res[seg_id][name])
+                zipped_seg_res[seg_id][name] = zsr
 
 #         print(zipped_seg_res)
         with open(segment_fp, "w") as f:
@@ -172,6 +208,7 @@ class BasePanorama(ABC):
             "longitude": self.longitude,
             "timestamp": self.timestamp,
             "meta_data": self.meta_data,
+            "pano_id": self.id,
         }
         return log_dict
 
@@ -185,3 +222,4 @@ class BasePanorama(ABC):
         self.longitude = log_dict["longitude"]
         self.timestamp = log_dict["timestamp"]
         self.meta_data = log_dict["meta_data"]
+        self.id = log_dict["pano_id"]
