@@ -1,6 +1,6 @@
 #!/bin/bash
 
-N_JOBS=1
+N_JOBS=64
 if [ $# -ge 1 ]; then
     N_JOBS=$1
 fi
@@ -20,7 +20,7 @@ rm -f $COMMAND_FILE
 
 let "NJOB_MAX=N_JOBS-1"
 for JOB in `seq 0 $NJOB_MAX`; do
-    echo "\${python} ./streetgreen.py --bbox amsterdam_almere --njobs $N_JOBS --jobid $JOB --model deeplab-xception_71 -l 2" >> $COMMAND_FILE
+    echo "\${python} ./streetgreen.py --bbox amsterdam_almere --njobs $N_JOBS --jobid $JOB --model deeplab-xception_71 -l 6 --skip-overlay" >> $COMMAND_FILE
 done
 
 batchgen -f $COMMAND_FILE $CONFIG_FILE -pre $PRE_FILE

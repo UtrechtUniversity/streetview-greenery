@@ -145,6 +145,7 @@ class AdamPanoramaTile(AdamPanoramaManager):
             self.get(**get_kwargs)
             self.load(**load_kwargs)
             if prepare_only:
+                self.download()
                 return _empty_green_res()
 #             if prepare_only:
 #                 return _empty_green_res()

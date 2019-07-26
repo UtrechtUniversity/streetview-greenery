@@ -111,7 +111,7 @@ class AdamPanoramaManager(BasePanoramaManager):
         " Parse parameters to format for data.amsterdam API. "
         params = {
             'srid': 4326,
-            'page_size': 10000,
+            'page_size': 2000,
         }
         if radius is not None and radius <= 250:
             params['newest_in_range'] = True

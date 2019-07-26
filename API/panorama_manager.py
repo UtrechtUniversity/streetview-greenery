@@ -93,6 +93,10 @@ class BasePanoramaManager(ABC):
             if pbar is not None:
                 pbar.update()
 
+    def download(self):
+        for panorama in self.panoramas:
+            panorama.download()
+
     def seg_analysis(self, pbar=None, **kwargs):
         " Do segmentation analysis. "
         for panorama in self.panoramas:

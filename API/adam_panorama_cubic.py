@@ -100,6 +100,7 @@ class AdamPanoramaCubic(BasePanorama):
 #                 print(f"Downoading {self.panorama_fp[side]} from {self.pano_url[side]}")
                 urllib.request.urlretrieve(self.pano_url[side],
                                            self.panorama_fp[side])
+        self.is_downloaded = True
 
     def seg_analysis(self, seg_model, show=False, recalc=False):
         "Do segmentation analysis, if possible load from file."
