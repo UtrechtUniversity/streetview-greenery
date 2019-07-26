@@ -94,8 +94,15 @@ class BasePanoramaManager(ABC):
                 pbar.update()
 
     def download(self):
-        for panorama in self.panoramas:
-            panorama.download()
+        avail_panoramas = []
+        while len(self.panoramas):
+            panorama = self.panoramas.pop()
+            try:
+                panorama.download()
+                avail_panoramas.append(panorama)
+            except HTTPError:
+                pass
+        self.panoramas = avail_panoramas
 
     def seg_analysis(self, pbar=None, **kwargs):
         " Do segmentation analysis. "
