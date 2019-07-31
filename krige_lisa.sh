@@ -2,7 +2,7 @@
 
 LVL=6
 
-CATEGORIES=(
+declare -a CATEGORIES=(
     "road" "sidewalk" "building" 
     "wall" "fence" "pole" 
     "traffic light" "traffic sign" 
@@ -11,7 +11,6 @@ CATEGORIES=(
     "truck" "bus" "train" 
     "motorcycle" "bicycle"
 )
-
 
 COMMAND_FILE="temp_commands.txt"
 PRE_FILE="temp_pre.txt"
@@ -23,7 +22,7 @@ cd `pwd`
 source hpc/module_load_cpu.sh
 EOF_CAT
 
-for CAT in ${CATEGORIES[*]}; do
+for CAT in "${CATEGORIES[@]}"; do
     echo "\${python} ./streetgreen.py --bbox amsterdam_almere -l $LVL -g $CAT --model deeplab-xception_71" >> $COMMAND_FILE
 done
 
