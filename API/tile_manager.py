@@ -196,7 +196,8 @@ class TileManager(object):
                                             full_long_grid)
         overlay = MapImageOverlay(full_krige_map, lat_grid=full_lat_grid,
                                   long_grid=full_long_grid,
-                                  alpha_map=alpha_map, name=overlay_name)
+                                  alpha_map=alpha_map, name=overlay_name,
+                                  min_green=0.0, max_green=1.0)
         return overlay, self.map_key
 
     def get(self, **kwargs):
