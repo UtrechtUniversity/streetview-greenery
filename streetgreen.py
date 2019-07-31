@@ -8,7 +8,7 @@ Created on 22 May 2019
 import sys
 import argparse
 import os
-
+import json
 
 
 def main():
@@ -115,13 +115,16 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
         return
 
     overlay, key = tile_man.krige_map()
-    overlay_dir = os.path.join("data.amsterdam", "maps")
-    overlay_file = f"{bbox_str}_{key}.html"
-    overlay_fp = os.path.join(overlay_dir, overlay_file)
-    geo_tiff_fp = os.path.join(overlay_dir, f"{bbox_str}_{key}.tif")
-    shape_fp = os.path.join(overlay_dir, f"{bbox_str}_{key}.shp")
-    os.makedirs(overlay_dir, exist_ok=True)
+    out_dir = os.path.join("data.amsterdam", "maps", key)
+    overlay_file = f"{bbox_str}.html"
+    overlay_fp = os.path.join(out_dir, overlay_file)
+    geo_tiff_fp = os.path.join(out_dir, f"{bbox_str}.tif")
+    shape_fp = os.path.join(out_dir, f"{bbox_str}.shp")
+    json_fp = os.path.join(out_dir, f"{bbox_str}.json")
+    os.makedirs(out_dir, exist_ok=True)
 
+    with open(json_fp, "w") as fp:
+        json.dump(green_res, fp)
     create_map(overlay, html_file=overlay_fp)
     overlay.write_geotiff(geo_tiff_fp)
 
