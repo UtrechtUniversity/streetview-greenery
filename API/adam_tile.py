@@ -5,7 +5,7 @@ tiles instead of circles.
 '''
 
 import os
-from math import cos, pi
+from math import cos, pi, sqrt
 import json
 
 import numpy as np
@@ -13,12 +13,46 @@ import numpy as np
 from API.adam_manager import AdamPanoramaManager
 from utils import _empty_green_res
 from API.idgen import get_green_key
+from utils.time_conversion import get_time_from_str
+from utils.sun import degree_to_meter, fast_coor_to_dist
+
+def get_close_neighbors(mini_tile_list, mini_x, mini_y, x_base, y_base, year_base, x_fac,
+                        y_fac, meta_data, max_dist=10):
+    neighbors = {}
+    for ix in range(mini_x-1, mini_x+2):
+        if ix < 0 or ix >= len(mini_tile_list):
+            continue
+        for iy in range(mini_y-1, mini_y+2):
+            if iy < 0 or iy >= len(mini_tile_list[ix]):
+                continue
+            for i_meta in mini_tile_list[ix][iy]:
+                meta = meta_data[i_meta]
+                x = meta["geometry"]["coordinates"][0]
+                y = meta["geometry"]["coordinates"][1]
+                dt = get_time_from_str(meta["timestamp"])
+                if dt.year == year_base:
+                    continue
+
+                dist = sqrt(((x-x_base)*x_fac)**2 + ((y-y_base)*y_fac)**2)
+                if dist > max_dist:
+                    continue
+                if dt.year in neighbors and neighbors[dt.year]["dist"] < dist:
+                    continue
+                elif dt.year not in neighbors:
+                    neighbors[dt.year] = {}
+                neighbors[dt.year]["dist"] = dist
+                neighbors[dt.year]["imeta"] = i_meta
+    nlist = []
+    for year in neighbors:
+        nlist.append(neighbors[year]["imeta"])
+    return nlist
 
 
 class AdamPanoramaTile(AdamPanoramaManager):
     def __init__(self, tile_name="unknown",
                  bbox=[[52.35, 4.93], [52.45, 4.935]],
                  grid_level=None,
+                 all_years=False,
                  **kwargs):
         super(AdamPanoramaTile, self).__init__(**kwargs)
         self.tile_name = tile_name
@@ -41,11 +75,12 @@ class AdamPanoramaTile(AdamPanoramaManager):
         self.bbox = bbox
         self.bb_string = bb_string
         self.grid_level = grid_level
+        self.all_years = all_years
 
     def get(self, **kwargs):
         super(AdamPanoramaTile, self).get(bbox=self.bb_string, **kwargs)
 
-    def load(self, verbose=True, **kwargs):
+    def load(self, verbose=True, max_range=7, **kwargs):
         """
         Compute which panorama's should be (down)loaded, load those.
 
@@ -59,6 +94,7 @@ class AdamPanoramaTile(AdamPanoramaManager):
         """
         # If no grid level behave as super class (AdamPanoramaManager).
         grid_level = self.grid_level
+        all_years = self.all_years
         if grid_level is None:
             super(AdamPanoramaTile, self).load(**kwargs)
             return
@@ -104,30 +140,44 @@ class AdamPanoramaTile(AdamPanoramaManager):
         # Go through all the mini tiles and select the ones closest to
         # the corner of their mini tile.
         load_ids = []
+        min_dist = [-1]
         for ix in range(nx):
             for iy in range(ny):
                 cur_list = sample_list[ix][iy]
                 # If there is nothing in the mini tile, skip.
                 if not len(cur_list):
                     continue
-                min_dist = 10.0**10
+                min_dist[0] = 10.0**10
                 idx_min = -1
 
                 # Compute the base points of the mini tile (southwest corner).
                 x_base = x_start + dx*ix
                 y_base = y_start + dy*iy
-                x_fac = cos(pi*y_base/180.0)
+                y_fac, x_fac = degree_to_meter(y_base)
                 # Compute minimum distance correcting lattitude.
                 for i_meta in cur_list:
                     meta = self.meta_data[i_meta]
                     x = meta["geometry"]["coordinates"][0]
                     y = meta["geometry"]["coordinates"][1]
-                    dist = ((x-x_base)*x_fac)**2 + (y-y_base)**2
-                    if dist < min_dist:
+                    dist = ((x-x_base)*x_fac)**2 + ((y-y_base)*y_fac)**2
+                    if dist < min_dist[0]:
                         idx_min = i_meta
-                        min_dist = dist
-                load_ids.append(idx_min)
+                        min_dist[0] = dist
+                if all_years:
+                    x_min = self.meta_data[idx_min]["geometry"]["coordinates"][0]
+                    y_min = self.meta_data[idx_min]["geometry"]["coordinates"][1]
+                    dt = get_time_from_str(self.meta_data[idx_min]["timestamp"])
+                    year_min = dt.year
 
+                    neighbors = get_close_neighbors(sample_list, 
+                                                    ix, iy, x_min, y_min, year_min, x_fac,
+                                                    y_fac, self.meta_data, max_range)
+                    idx_min = [idx_min]
+                    idx_min.extend(neighbors)
+#                     print(y_min, x_min)
+
+                load_ids.extend(idx_min)
+#         exit()
         load_ids = np.array(load_ids)
         super(AdamPanoramaTile, self).load(load_ids=load_ids)
 

@@ -11,7 +11,7 @@ def tiff_to_overlay(tiff_fp, name=None, min_green=-0.03, max_green=None):
     if name is None:
         name = tiff_fp
     ds = gdal.Open(tiff_fp)
-    print(ds.GetGeoTransform())
+#     print(ds.GetGeoTransform())
     prj = ds.GetProjection()
     srs = osr.SpatialReference(wkt=prj)
     warped_ds = gdal.Warp('', ds, dstSRS='EPSG:4326', format='VRT',

@@ -107,6 +107,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
                            job_id=job_id, **seg_kwargs,
                            cubic_pictures=cubic_pictures,
+                           all_years=True,
                            **green_kwargs)
 
     green_res = tile_man.green_direct(prepare_only=prepare_only)
@@ -115,6 +116,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
         return
 
     overlay, key = tile_man.krige_map()
+    print(overlay)
     out_dir = os.path.join("data.amsterdam", "maps", key)
     overlay_file = f"{bbox_str}.html"
     overlay_fp = os.path.join(out_dir, overlay_file)

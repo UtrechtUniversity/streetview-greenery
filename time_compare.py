@@ -2,14 +2,20 @@
 
 import os
 import datetime
+import sys
 
 import numpy as np
 from sklearn.linear_model.base import LinearRegression
 import matplotlib.pyplot as plt
+from pysolar.solar import get_altitude_fast
+from tqdm import tqdm
 
 from utils.selection import select_bbox, select_seg_model, select_green_model
 from greenery.visualization import plot_greenery
 from API.tile_manager import TileManager
+from scipy.stats import stats
+from utils.sun import Sun
+from utils.time_conversion import get_time_from_str
 
 
 def _del_green(green_res, i):
@@ -50,40 +56,75 @@ def compare_time(green, time_measure="year", **kwargs):
 
     green_kwargs = select_green_model(green)
 
-    tiler = TileManager(cubic_pictures=False, **green_kwargs, **kwargs)
+    tiler = TileManager(cubic_pictures=True, **green_kwargs, **kwargs)
 
     green_res = tiler.green_direct()
 
     sorted_res = {}
-    for i in range(len(green_res["green"])):
+    long_res = {}
+    sun = Sun()
+    x_label="?"
+    y_label="greenery"
+    for i in tqdm(range(len(green_res["green"]))):
         dt_str = green_res["timestamp"][i]
         green = green_res["green"][i]
-        dt = datetime.datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-
+        lat = green_res["lat"][i]
+        long = green_res["long"][i]
+        dt = get_time_from_str(dt_str)
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
         if time_measure == "year":
             tm = dt.year
         elif time_measure == "month":
             tm = dt.month
+        elif time_measure == "all_month":
+            tm = (dt.year-2016)*12 + dt.month-1
         elif time_measure == "hour":
-            tm = dt.hour
-        if tm in sorted_res:
-            sorted_res[tm][0] += green
-            sorted_res[tm][1] += 1
-        else:
-            sorted_res[tm] = [green, 1]
+            tm = sun.timeToDawnDusk(dt, longitude=long, latitude=lat, time_zone='UTC')
+            tm = round(tm*4, 0)/4
+        elif time_measure == "sun_angle":
+            tm = round(get_altitude_fast(lat, long, dt)/2, 0)*2
+            x_label="Sun altitude (degrees)"
+        elif time_measure == "minute":
+            tm = dt.minute
+        elif time_measure == "second":
+            tm = dt.second
+        try:
+            sorted_res[tm].append(green)
+            long_res[tm].append(long)
+        except KeyError:
+            sorted_res[tm] = []
+            sorted_res[tm].append(green)
+            long_res[tm] = []
+            long_res[tm].append(long)
+#         if tm in sorted_res:
+#             sorted_res[tm][0] += green
+#             sorted_res[tm][1] += 1
+#         else:
+#             sorted_res[tm] = [green, 1]
     tm_array = np.zeros(len(sorted_res))
-    green_val = np.zeros(len(sorted_res))
+    green_avg = np.zeros(len(sorted_res))
+    green_err = np.zeros(len(sorted_res))
+
+    long_avg = np.zeros(len(sorted_res))
+    long_err = np.zeros(len(sorted_res))
 
     i = 0
     for tm in sorted_res:
         tm_array[i] = tm
-        green_val[i] = sorted_res[tm][0]/sorted_res[tm][1]
+        green_avg[i] = np.array(sorted_res[tm]).mean()
+        green_err[i] = stats.sem(np.array(sorted_res[tm]))
+        long_avg[i] = np.array(long_res[tm]).mean()
+        long_err[i] = stats.sem(np.array(long_res[tm]))
         i += 1
 
-    print(tm_array, green_val)
+
+    order = np.argsort(tm_array)
+#     print(tm_array, green_avg, green_err)
 
     plt.figure()
-    plt.scatter(tm_array, green_val)
+    plt.errorbar(tm_array[order], green_avg[order], green_err[order])
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
     plt.show()
 
 
@@ -132,10 +173,15 @@ def main():
 
     area = "oosterpark"
     model = "deeplab-mobilenet"
-    grid_level = 4
+    grid_level = 3
 
     green = "vegetation"
     time_measure = "month"
+    
+    if len(sys.argv) > 1:
+        time_measure = sys.argv[1]
+    if len(sys.argv) > 2:
+        green = sys.argv[2]
 
     bbox = select_bbox(area)
     seg_kwargs = select_seg_model(model)

@@ -178,7 +178,6 @@ class BasePanorama(ABC):
                 for seg_id in zipped_seg_res:
                     self.all_seg_res[seg_id] = {}
                     for name in zipped_seg_res[seg_id]:
-                        print(zipped_seg_res)
                         zsr = zipped_seg_res[seg_id][name]
                         usr = b64_to_dict(zsr)
                         self.all_seg_res[seg_id][name] = usr

@@ -6,12 +6,13 @@ import json
 import numpy as np
 from tqdm import tqdm
 import inspect
+import time
 
 from models import DeepLabModel
 from abc import ABC
 from greenery import ClassPercentage
 from urllib.error import HTTPError
-from utils.mapping import _empty_green_res
+from utils.mapping import _empty_green_res, _add_green_res
 
 
 class BasePanoramaManager(ABC):
@@ -94,14 +95,19 @@ class BasePanoramaManager(ABC):
                 pbar.update()
 
     def download(self):
+        "Download the "
         avail_panoramas = []
         while len(self.panoramas):
             panorama = self.panoramas.pop()
-            try:
-                panorama.download()
-                avail_panoramas.append(panorama)
-            except HTTPError:
-                pass
+            n_try = 0
+            while n_try < 5:
+                try:
+                    panorama.download()
+                    avail_panoramas.append(panorama)
+                    break
+                except (ConnectionError, HTTPError) as _:
+                    n_try += 1
+                    time.sleep(3)
         self.panoramas = avail_panoramas
 
     def seg_analysis(self, pbar=None, **kwargs):
@@ -130,10 +136,7 @@ class BasePanoramaManager(ABC):
         for panorama in self.panoramas:
             green_frac = panorama.green_analysis(seg_model=self.seg_model,
                                                  green_model=self.green_model)
-            green_dict["green"].append(green_frac)
-            green_dict["lat"].append(panorama.latitude)
-            green_dict["long"].append(panorama.longitude)
-            green_dict["timestamp"].append(panorama.timestamp)
+            _add_green_res(green_dict, green_frac, panorama)
             if pbar is not None:
                 pbar.update()
         return green_dict
@@ -163,10 +166,7 @@ class BasePanoramaManager(ABC):
             try:
                 green_frac = panorama.green_pipe(seg_model=self.seg_model,
                                                  green_model=self.green_model)
-                green_dict["green"].append(green_frac)
-                green_dict["lat"].append(panorama.latitude)
-                green_dict["long"].append(panorama.longitude)
-                green_dict["timestamp"].append(panorama.timestamp)
+                _add_green_res(green_dict, green_frac, panorama)
             except HTTPError:
                 new_broken_links = True
                 broken_links[panorama.id] = True

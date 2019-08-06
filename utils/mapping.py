@@ -25,6 +25,16 @@ class MapImageOverlay:
             self.cmap = cmap
             self.name = name
 
+    def __str__(self):
+        mystr = "\n--------- Map Overlay ----------\n"
+        mystr += f"Name: {self.name}\n"
+        mystr += f"Lattitude: [{self.lat_grid.min()}, {self.lat_grid.max()}]\n"
+        mystr += f"Longitude: [{self.long_grid.min()}, {self.long_grid.max()}]\n"
+        mystr += f"Values: [{self.greenery.min()}, {self.greenery.max()}]\n"
+        mystr += f"Alpha (avg): {self.alpha_map.mean()}\n"
+        mystr += "---------------------------------\n"
+        return mystr
+
     def load(self, file_fp):
         "Load the overlay from a .json file."
         try:
@@ -234,8 +244,16 @@ def _empty_green_res():
         "lat": [],
         "long": [],
         "timestamp": [],
+        "pano_id": [],
     }
     return green_res
+
+def _add_green_res(green_res, new_val, panorama):
+    green_res["green"].append(new_val)
+    green_res["lat"].append(panorama.latitude)
+    green_res["long"].append(panorama.longitude)
+    green_res["timestamp"].append(panorama.timestamp)
+    green_res["pano_id"].append(panorama.id)
 
 
 def _extend_green_res(g1, g2):

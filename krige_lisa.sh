@@ -23,7 +23,7 @@ source hpc/module_load_cpu.sh
 EOF_CAT
 
 for CAT in "${CATEGORIES[@]}"; do
-    echo "\${python} ./streetgreen.py --bbox amsterdam_almere -l $LVL -g $CAT --model deeplab-xception_71" >> $COMMAND_FILE
+    echo "\${python} ./streetgreen.py --bbox amsterdam_almere -l $LVL -g '$CAT' --model deeplab-xception_71" >> $COMMAND_FILE
 done
 
 batchgen -f $COMMAND_FILE $CONFIG_FILE -pre $PRE_FILE
