@@ -267,6 +267,7 @@ def _semivariance(green_matrix, nlags=None, variogram_model="exponential",
         print(param)
         plt.show()
 
+    param[2] = max(1e-5, param[2])
     param[0] += param[2]
 
     krige_kwargs = {

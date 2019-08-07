@@ -122,8 +122,10 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     if prepare_only or skip_overlay:
         return
 
-    overlay, key = tile_man.krige_map(overlay_name=bbox_str)
+    overlay, key = tile_man.krige_map(overlay_name=bbox_str, n_job=n_job, job_id=job_id)
     print(overlay)
+    if n_job  != 1:
+        return
     out_dir = os.path.join("data.amsterdam", "maps", key)
     overlay_file = f"{bbox_str}.html"
     overlay_fp = os.path.join(out_dir, overlay_file)

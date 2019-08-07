@@ -136,7 +136,7 @@ class TileManager(object):
         return all_green_res
 
     def krige_map(self, window_range=1, overlay_name="greenery", upscale=2,
-                  **kwargs):
+                  n_job=1, job_id=0, **kwargs):
         if self.green_mat is None:
             self.green_direct(**kwargs)
 
@@ -166,6 +166,8 @@ class TileManager(object):
         for iy, green_row in enumerate(self.green_mat):
             for ix, green_res in enumerate(green_row):
                 pbar.update()
+                if (iy*len(green_row)+ix) % n_job != job_id:
+                    continue
                 krige_fp = os.path.join(krige_dir, "krige_"+str(ix)+"_"+str(iy)+".json")
                 try:
                     with open(krige_fp, "r") as fp:
