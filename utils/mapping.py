@@ -6,6 +6,7 @@ import json
 from json.decoder import JSONDecodeError
 import matplotlib.pyplot as plt
 from sklearn.linear_model.base import LinearRegression
+from tqdm import tqdm
 # import gdal
 # import osr
 # import osgeo.ogr as ogr
@@ -111,7 +112,8 @@ class MapImageOverlay:
         i_lat = int(round((lat-self.lat_grid.min())/self.dlat))
         i_long = int(round((long-self.long_grid.min())/self.dlong))
         if (i_lat < 0 or i_lat >= len(self.lat_grid) 
-            or i_long < 0 or i_long >= len(self.long_grid)):
+            or i_long < 0 or i_long >= len(self.long_grid)
+            or self.alpha_map[i_lat, i_long] == 0):
             return None
 #         print(i_lat, i_long)
         return self.greenery[i_lat, i_long]
@@ -119,13 +121,16 @@ class MapImageOverlay:
     def compare(self, overlay):
         green_self = []
         green_overlay = []
-        for lat in self.lat_grid:
+        for lat in tqdm(self.lat_grid):
             for long in self.long_grid:
                 sg = self.get_green(lat, long)
+                if sg is None or sg < 0 or sg > 1:
+                    continue
                 og = overlay.get_green(lat, long)
-                if sg is not None and og is not None:
-                    green_self.append(sg)
-                    green_overlay.append(og)
+                if og is None or og < 0 or og > 1:
+                    continue
+                green_self.append(sg)
+                green_overlay.append(og)
         
         green_self = np.array(green_self)
         green_overlay = np.array(green_overlay)
@@ -136,7 +141,7 @@ class MapImageOverlay:
         reg_lab = "{0:.2f} + {1:.2f} x (score={2:.2f})".format(reg.intercept_, reg.coef_[0],
                                                                reg_score)
         plt.plot([0.0, 0.7], reg.predict([[0.0], [0.7]]), label=reg_lab)
-        plt.scatter(green_self, green_overlay, alpha=0.3)
+        plt.scatter(green_self, green_overlay, alpha=0.1)
         plt.xlabel("Streetview")
         plt.ylabel("NDVI")
         plt.legend(loc="lower right")
