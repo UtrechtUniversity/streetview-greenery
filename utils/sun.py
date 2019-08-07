@@ -119,10 +119,12 @@ class Sun:
         cosH = (math.cos(TO_RAD*zenith) - (sinDec * math.sin(TO_RAD*latitude))) / (cosDec * math.cos(TO_RAD*latitude))
 
         if cosH > 1:
-            return {'status': False, 'msg': 'the sun never rises on this location (on the specified date)'}
+            return {'status': False,
+                    'msg': 'the sun never rises on this location (on the specified date)'}
 
         if cosH < -1:
-            return {'status': False, 'msg': 'the sun never sets on this location (on the specified date)'}
+            return {'status': False,
+                    'msg': 'the sun never sets on this location (on the specified date)'}
 
         #7b. finish calculating H and convert into hours
 

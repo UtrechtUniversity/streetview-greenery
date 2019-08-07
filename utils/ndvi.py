@@ -11,11 +11,17 @@ def tiff_to_overlay(tiff_fp, name=None, min_green=-0.03, max_green=None):
     if name is None:
         name = tiff_fp
     ds = gdal.Open(tiff_fp)
-#     print(ds.GetGeoTransform())
     prj = ds.GetProjection()
+#     print(prj)
     srs = osr.SpatialReference(wkt=prj)
-    warped_ds = gdal.Warp('', ds, dstSRS='EPSG:4326', format='VRT',
-                          width=ds.RasterXSize, height=ds.RasterYSize)
+#     print(srs.GetAttrValue('geogcs'))
+    if srs.GetAttrValue('geogcs') == "WGS 84":
+        warped_ds = gdal.Warp('', ds, dstSRS='EPSG:4326', format='VRT',
+                              xRes=ds.GetGeoTransform()[1], yRes=ds.GetGeoTransform()[5])
+    else:
+        warped_ds = gdal.Warp('', ds, dstSRS='EPSG:4326', format='VRT',
+                              width=ds.RasterXSize, height=ds.RasterYSize)
+       
     warped_array = np.array(warped_ds.GetRasterBand(1).ReadAsArray())
     warped_array = np.flip(warped_array, axis=0)
     NO_DATA = warped_ds.GetRasterBand(1).GetNoDataValue()

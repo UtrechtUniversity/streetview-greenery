@@ -7,6 +7,7 @@ import json
 import numpy as np
 from utils.size import b64_to_dict, dict_to_b64
 from API.idgen import get_green_key
+from json.decoder import JSONDecodeError
 
 
 def _meta_fp(panorama_fp):
@@ -150,7 +151,7 @@ class BasePanorama(ABC):
         try:
             with open(green_fp, "r") as fp:
                 self.all_green_res = json.load(fp)
-        except FileNotFoundError:
+        except (FileNotFoundError, JSONDecodeError):
             pass
 
     def save_greenery(self, green_fp):

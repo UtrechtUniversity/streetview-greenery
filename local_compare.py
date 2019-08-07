@@ -195,7 +195,7 @@ def main():
 
     area = "oosterpark"
     model = "deeplab-mobilenet"
-    grid_level = 2
+    grid_level = 3
 
     green = "vegetation"
     time_measure = "month"

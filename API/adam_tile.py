@@ -174,10 +174,11 @@ class AdamPanoramaTile(AdamPanoramaManager):
                                                     y_fac, self.meta_data, max_range)
                     idx_min = [idx_min]
                     idx_min.extend(neighbors)
-#                     print(y_min, x_min)
+                else:
+                    idx_min = [idx_min]
 
                 load_ids.extend(idx_min)
-#         exit()
+
         load_ids = np.array(load_ids)
         super(AdamPanoramaTile, self).load(load_ids=load_ids)
 
@@ -186,8 +187,9 @@ class AdamPanoramaTile(AdamPanoramaManager):
         seg_id = self.seg_model.id()
         green_id = self.green_model.id(one_class=True)
         green_level_key = get_green_key(self.pano_class, seg_id, green_id,
-                                        self.grid_level)
+                                        self.grid_level, self.all_years)
         green_fp = os.path.join(self.data_dir, green_level_key+".json")
+
         try:
             with open(green_fp, "r") as f:
                 green_res = json.load(f)

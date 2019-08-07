@@ -4,6 +4,8 @@ import folium
 import numpy as np
 import json
 from json.decoder import JSONDecodeError
+import matplotlib.pyplot as plt
+from sklearn.linear_model.base import LinearRegression
 # import gdal
 # import osr
 # import osgeo.ogr as ogr
@@ -24,6 +26,8 @@ class MapImageOverlay:
             self.max_green = max_green
             self.cmap = cmap
             self.name = name
+        self.dlat = (self.lat_grid.max()-self.lat_grid.min())/(len(self.lat_grid)-1)
+        self.dlong = (self.long_grid.max()-self.long_grid.min())/(len(self.long_grid)-1)
 
     def __str__(self):
         mystr = "\n--------- Map Overlay ----------\n"
@@ -89,6 +93,7 @@ class MapImageOverlay:
         geotransform = (
             xmin, xres, 0, ymin, 0, yres
         )
+
         geodata.SetGeoTransform(geotransform)
         geodata.SetProjection(proj.ExportToWkt())
 
@@ -100,6 +105,44 @@ class MapImageOverlay:
         geodata.GetRasterBand(1).SetNoDataValue(99999)
         geodata.FlushCache()
 
+    def get_green(self, lat, long):
+#         print(self.dlat)
+#         print((lat-self.lat_grid.min())/self.dlat)
+        i_lat = int(round((lat-self.lat_grid.min())/self.dlat))
+        i_long = int(round((long-self.long_grid.min())/self.dlong))
+        if (i_lat < 0 or i_lat >= len(self.lat_grid) 
+            or i_long < 0 or i_long >= len(self.long_grid)):
+            return None
+#         print(i_lat, i_long)
+        return self.greenery[i_lat, i_long]
+
+    def compare(self, overlay):
+        green_self = []
+        green_overlay = []
+        for lat in self.lat_grid:
+            for long in self.long_grid:
+                sg = self.get_green(lat, long)
+                og = overlay.get_green(lat, long)
+                if sg is not None and og is not None:
+                    green_self.append(sg)
+                    green_overlay.append(og)
+        
+        green_self = np.array(green_self)
+        green_overlay = np.array(green_overlay)
+        reg = LinearRegression().fit(green_self.reshape(-1,1), green_overlay)
+        reg_score = reg.score(green_self.reshape(-1,1), green_overlay)
+        print("score", reg_score)
+        print("coef, intercept", reg.coef_[0], reg.intercept_)
+        reg_lab = "{0:.2f} + {1:.2f} x (score={2:.2f})".format(reg.intercept_, reg.coef_[0],
+                                                               reg_score)
+        plt.plot([0.0, 0.7], reg.predict([[0.0], [0.7]]), label=reg_lab)
+        plt.scatter(green_self, green_overlay, alpha=0.3)
+        plt.xlabel("Streetview")
+        plt.ylabel("NDVI")
+        plt.legend(loc="lower right")
+        plt.show()
+        
+        
 
 def _lat_bounds(lat_grid, long_grid):
     "Create lattice bounds from the grid."

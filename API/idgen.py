@@ -1,4 +1,4 @@
-def get_green_key(myclass, seg_id, green_id, grid_level=None):
+def get_green_key(myclass, seg_id, green_id, grid_level=None, all_years=False):
     key = ""
     key += f"{green_id}-{seg_id}-"
 
@@ -11,4 +11,7 @@ def get_green_key(myclass, seg_id, green_id, grid_level=None):
 
     if grid_level is not None:
         key += f"-lvl_{grid_level}"
+
+    if all_years:
+        key += f"-historical"
     return key

@@ -89,12 +89,19 @@ def argument_parser():
         action="store_true",
         help="Use panorama pictures instead of cubic pictures"
     )
+    parser.add_argument(
+        "-y", "--historical-data",
+        default=False,
+        dest="all_years",
+        action="store_true",
+        help="Collect photos from every year within a small radius.",
+    )
     return parser
 
 
 def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
                 n_job=1, job_id=0, bbox_str='amsterdam', grid_level=0,
-                skip_overlay=False, prepare_only=False, use_panorama=False):
+                skip_overlay=False, prepare_only=False, use_panorama=False, all_years=False):
     from utils.selection import select_bbox, select_seg_model, select_green_model
     from API.tile_manager import TileManager
     from utils.mapping import create_map, green_res_to_shp
@@ -107,7 +114,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
                            job_id=job_id, **seg_kwargs,
                            cubic_pictures=cubic_pictures,
-                           all_years=True,
+                           all_years=all_years,
                            **green_kwargs)
 
     green_res = tile_man.green_direct(prepare_only=prepare_only)
