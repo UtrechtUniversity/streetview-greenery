@@ -26,7 +26,7 @@ EOF_CAT
 let "NJOB_MAX=N_JOBS-1"
 CAT="vegetation"
 for JOB in `seq 0 $NJOB_MAX`; do
-    echo "\${python} ./streetgreen.py --bbox amsterdam_almere -l $LVL -g '$CAT' --model deeplab-xception_71 --njobs ${N_JOBS} --jobid $JOB" >> $COMMAND_FILE
+    echo "\${python} ./streetgreen.py --bbox amsterdam_almere -l $LVL -g '$CAT' --model deeplab-xception_71 --njobs ${N_JOBS} --jobid $JOB" --parallel-krige >> $COMMAND_FILE
 done
 # for CAT in "${CATEGORIES[@]}"; do
 #     echo "\${python} ./streetgreen.py --bbox amsterdam_almere -l $LVL -g '$CAT' --model deeplab-xception_71" >> $COMMAND_FILE

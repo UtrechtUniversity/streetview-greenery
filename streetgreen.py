@@ -96,11 +96,18 @@ def argument_parser():
         action="store_true",
         help="Collect photos from every year within a small radius.",
     )
+    parser.add_argument(
+        "-k", "--parallel-krige",
+        default=False,
+        dest="krige_only",
+        action="store_true",
+        help="Only do the kriging in parallel; use if segmentation is there, but kriging not yet."
+    )
     return parser
 
 
 def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
-                n_job=1, job_id=0, bbox_str='amsterdam', grid_level=0,
+                n_job=1, job_id=0, bbox_str='amsterdam', grid_level=0, krige_only=False,
                 skip_overlay=False, prepare_only=False, use_panorama=False, all_years=False):
     from utils.selection import select_bbox, select_seg_model, select_green_model
     from API.tile_manager import TileManager
@@ -110,6 +117,13 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     seg_kwargs = select_seg_model(model)
     green_kwargs = select_green_model(greenery_measure)
     cubic_pictures = not use_panorama
+
+    krige_n_job = n_job
+    krige_job_id = job_id
+    if krige_only:
+        n_job=1
+        job_id=0
+        
 
     tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
                            job_id=job_id, **seg_kwargs,
@@ -122,9 +136,9 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     if prepare_only or skip_overlay:
         return
 
-    overlay, key = tile_man.krige_map(overlay_name=bbox_str, n_job=n_job, job_id=job_id)
+    overlay, key = tile_man.krige_map(overlay_name=bbox_str, n_job=krige_n_job, job_id=krige_job_id)
     print(overlay)
-    if n_job  != 1:
+    if krige_n_job != 1:
         return
     out_dir = os.path.join("data.amsterdam", "maps", key)
     overlay_file = f"{bbox_str}.html"
