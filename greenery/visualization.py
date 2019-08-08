@@ -16,7 +16,7 @@ from pykrige.variogram_models import spherical_variogram_model,\
 from utils.mapping import MapImageOverlay
 from scipy.spatial.distance import euclidean, sqeuclidean, pdist
 from matplotlib import pyplot as plt
-from tqdm._tqdm import tqdm
+from tqdm import tqdm
 
 
 def plot_greenery(green_res, cmap="RdYlGn", show=True, title=None):

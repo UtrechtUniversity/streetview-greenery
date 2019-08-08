@@ -13,9 +13,7 @@ from greenery.visualization import krige_greenery, _alpha_from_coordinates,\
 from utils.mapping import MapImageOverlay
 from utils import _empty_green_res, _extend_green_res
 from API.idgen import get_green_key
-from fileinput import fileno
 from json.decoder import JSONDecodeError
-from pandas.tests.io.test_parquet import fp
 
 
 class TileManager(object):
