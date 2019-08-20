@@ -20,6 +20,8 @@ COMMAND_FILE="temp_commands_compute.txt"
 PRE_FILE="temp_pre_compute.txt"
 CONFIG_FILE="compute_lisa.ini"
 
+JOB_NAME=`grep "job_name = " "compute_lisa.ini" | cut -f3 -d" "`
+
 cat > $PRE_FILE << EOF_CAT 
 #SBATCH -p gpu_shared
 #SBATCH -n 3
@@ -35,7 +37,9 @@ for JOB in `seq 0 $NJOB_MAX`; do
 done
 
 batchgen -f $COMMAND_FILE $CONFIG_FILE -pre $PRE_FILE
-
-sed -i '' -e '/#SBATCH --tasks-per-node=12/d' batch.slurm_lisa/sv_compute/batch*
-
+if [ `uname -s` == "Darwin" ]; then
+    sed -i '' -e '/#SBATCH --tasks-per-node=12/d' batch.slurm_lisa/$JOB_NAME/batch*
+else
+    sed -i '/#SBATCH --tasks-per-node=12/d' batch.slurm_lisa/$JOB_NAME/batch*
+fi
 rm -f $COMMAND_FILE $PRE_FILE
