@@ -16,7 +16,6 @@ if [ $# -ge 1 ]; then
     fi
 fi
 
-echo "$N_JOBS $EXTRA_ARGS"
 COMMAND_FILE="temp_commands.txt"
 PRE_FILE="temp_pre.txt"
 CONFIG_FILE="prepare_lisa.ini"
