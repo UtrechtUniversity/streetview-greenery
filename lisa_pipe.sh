@@ -52,7 +52,7 @@ function submit_layer {
     fi
 #     >&2 echo "$COMMAND"
     
-    COMMAND="simulate_sbatch 10"
+#     COMMAND="simulate_sbatch 10"
 
     BATCH_NO=`eval "$COMMAND" | cut -f4 -d' '`
     echo "$BATCH_NO"
@@ -65,4 +65,4 @@ BATCH_NO=`submit_layer "compute" "$CFG_FILE" "$CFG_ADD" "$BATCH_NO"`
 echo "Submitted compute job"
 BATCH_NO=`submit_layer "krige" "$CFG_FILE" "$CFG_ADD" "$BATCH_NO"`
 echo "Submitted krige job"
-echo $BATCH_NO
+# echo $BATCH_NO
