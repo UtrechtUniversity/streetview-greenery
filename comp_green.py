@@ -98,15 +98,19 @@ def compare_panorama_cubic(greenery_measure="vegetation", **kwargs):
     x_pano = np.array(panorama_green["green"]).reshape(-1, 1)
     y_cubic = np.array(cubic_green["green"])
     reg = LinearRegression().fit(x_pano, y_cubic)
-    print(reg.score(x_pano, y_cubic))
+    score = reg.score(x_pano, y_cubic)
+    print(score)
     print(reg.coef_[0], reg.intercept_)
+    lgd = f"{round(reg.intercept_,2)} + {round(reg.coef_[0], 2)} x"
     plt.figure()
-    plt.scatter(panorama_green["green"], cubic_green["green"])
-    plt.plot(x, reg.predict(x.reshape(-1, 1)))
+    plt.scatter(panorama_green["green"], cubic_green["green"], alpha=0.4)
+    myplot, = plt.plot(x, reg.predict(x.reshape(-1, 1)))
+    plt.legend([myplot], [lgd], loc="upper left")
     plt.xlabel("panoramas")
     plt.ylabel("cubic")
     plt.xlim(0, max(0.001, max(panorama_green["green"])*1.1))
     plt.ylim(0, max(0.001, max(cubic_green["green"])*1.1))
+    plt.title(f"score: {round(score, 3)}")
 
     plot_greenery(panorama_green, show=False, title="panorama")
     plot_greenery(cubic_green, show=False, title="cubic")
@@ -123,7 +127,7 @@ def main():
 
     area = "oosterpark"
     model = "deeplab-mobilenet"
-    grid_level = 2
+    grid_level = 3
 
     x_green = "vegetation"
     y_green = "building"

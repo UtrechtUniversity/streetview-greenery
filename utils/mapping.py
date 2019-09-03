@@ -296,6 +296,7 @@ def _empty_green_res():
     }
     return green_res
 
+
 def _add_green_res(green_res, new_val, panorama):
     green_res["green"].append(new_val)
     green_res["lat"].append(panorama.latitude)
