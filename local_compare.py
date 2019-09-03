@@ -55,7 +55,7 @@ def compare_time(green, time_measure="year", **kwargs):
 
     green_kwargs = select_green_model(green)
 
-    tiler = TileManager(cubic_pictures=True, **green_kwargs, **kwargs)
+    tiler = TileManager(cubic_pictures=True, all_years=True, **green_kwargs, **kwargs)
 
     green_res = tiler.green_direct()
 
@@ -193,9 +193,9 @@ def main():
         Adjust area, grid_level, segmentation model directly in the script.
     """
 
-    area = "oosterpark"
-    model = "deeplab-mobilenet"
-    grid_level = 3
+    area = "amsterdam_almere"
+    model = "deeplab-xception_71"
+    grid_level = 4
 
     green = "vegetation"
     time_measure = "month"

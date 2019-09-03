@@ -15,15 +15,13 @@ def _meta_fp(panorama_fp):
     return base_fp+"_meta"+".json"
 
 
-def _green_fractions(panorama_fp, seg_res, show=False):
+def _green_fractions(seg_res):
     seg_map = np.array(seg_res['seg_map'])
     names = np.array(seg_res['color_map'][0])
 
     unique, counts = np.unique(seg_map, return_counts=True, axis=None)
 
     fractions = counts/seg_map.size
-    if show:
-        plot_segmentation(panorama_fp, seg_map, seg_res["color_map"])
     return dict(zip(names[unique], fractions))
 
 
@@ -85,11 +83,20 @@ class BasePanorama(ABC):
         self.segment_fp = join(self.data_dir, "segment.json")
         self.load_segmentation(self.segment_fp)
 
-        if seg_id not in self.all_seg_res or show or recalc:
-            if not self.is_downloaded:
-                self.download()
-            self.all_seg_res[seg_id] = self.seg_run(seg_model, show)
-            self.save_segmentation(self.segment_fp)
+        if seg_id in self.all_seg_res and not show or recalc:
+            found_seg = True
+            for name in self.seg_names:
+                if name not in self.all_seg_res[seg_id]:
+                    found_seg = False
+                    break
+            if found_seg:
+                return
+
+        if not self.is_downloaded:
+            self.download()
+        self.all_seg_res[seg_id] = {}
+        self.all_seg_res[seg_id].update(self.seg_run(seg_model, show))
+        self.save_segmentation(self.segment_fp)
 
     def green_analysis(self, seg_model, green_model):
         """

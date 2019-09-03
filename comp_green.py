@@ -123,7 +123,7 @@ def main():
 
     area = "oosterpark"
     model = "deeplab-mobilenet"
-    grid_level = 3
+    grid_level = 2
 
     x_green = "vegetation"
     y_green = "building"

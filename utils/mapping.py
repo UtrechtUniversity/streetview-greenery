@@ -86,7 +86,7 @@ class MapImageOverlay:
         proj.ImportFromEPSG(4326)
         driver = gdal.GetDriverByName("GTiff")
         [rows, cols] = self.greenery.shape
-        geodata = driver.Create(file_fp, rows, cols, 1, eType=gdal.GDT_Float32)
+        geodata = driver.Create(file_fp, cols, rows, 1, eType=gdal.GDT_Float32)
         xmin = self.long_grid.min()
         xres = (self.long_grid.max()-self.long_grid.min())/(self.long_grid.shape[0])
         yres = (self.lat_grid.max()-self.lat_grid.min())/(self.lat_grid.shape[0])
@@ -100,7 +100,7 @@ class MapImageOverlay:
 
         # For transparent pictures, set them to no data in the tiff file.
         alpha_zero = np.where(self.alpha_map == 0)
-        new_green_map = np.copy(self.greenery)
+        new_green_map = self.greenery.astype('float32')
         new_green_map[alpha_zero] = 99999
         geodata.GetRasterBand(1).WriteArray(new_green_map)
         geodata.GetRasterBand(1).SetNoDataValue(99999)

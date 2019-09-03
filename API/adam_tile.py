@@ -16,8 +16,9 @@ from API.idgen import get_green_key
 from utils.time_conversion import get_time_from_str
 from utils.sun import degree_to_meter, fast_coor_to_dist
 
-def get_close_neighbors(mini_tile_list, mini_x, mini_y, x_base, y_base, year_base, x_fac,
-                        y_fac, meta_data, max_dist=10):
+
+def get_close_neighbors(mini_tile_list, mini_x, mini_y, x_base, y_base,
+                        year_base, x_fac, y_fac, meta_data, max_dist=10):
     neighbors = {}
     for ix in range(mini_x-1, mini_x+2):
         if ix < 0 or ix >= len(mini_tile_list):

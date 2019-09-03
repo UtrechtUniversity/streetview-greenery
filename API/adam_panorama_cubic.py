@@ -59,6 +59,8 @@ class AdamPanoramaCubic(BasePanorama):
             "right": "r",
         }
 
+        self.seg_names = self.sides.keys()
+
         if data_dir is None:
             data_dir = os.path.join(data_src, "pics")
         super(AdamPanoramaCubic, self).__init__(
@@ -97,7 +99,6 @@ class AdamPanoramaCubic(BasePanorama):
     def download(self):
         for side in self.pano_url:
             if not os.path.exists(self.panorama_fp[side]):
-#                 print(f"Downoading {self.panorama_fp[side]} from {self.pano_url[side]}")
                 urllib.request.urlretrieve(self.pano_url[side],
                                            self.panorama_fp[side])
         self.is_downloaded = True
@@ -108,7 +109,7 @@ class AdamPanoramaCubic(BasePanorama):
 
         self.load_segmentation(self.segment_fp)
         if len(self.all_seg_res) < 1:
-            self.all_seg_res = self.seg_run(seg_model, show=show)
+            self.all_seg_res[model_id].update(self.seg_run(seg_model, show=show))
             self.save_segmentation(self.segment_fp)
         elif show:
             self.show()
@@ -117,7 +118,7 @@ class AdamPanoramaCubic(BasePanorama):
         n_pano = len(seg_res)
         seg_frac = {}
         # Iterate over all phot directions (left, right, etc.)
-        for side in seg_res:
+        for side in self.sides:
             side_seg_res = seg_res[side]
             seg_map = np.array(side_seg_res['seg_map'])
             names = np.array(side_seg_res['color_map'][0])
@@ -178,7 +179,7 @@ class AdamPanoramaCubic(BasePanorama):
 
     def show(self):
         " Plot the segmentation analysis. "
-        for side in self.all_seg_res:
+        for side in self.sides:
             pano_fp = self.panorama_fp[side]
             seg_res = self.all_seg_res[side]
             seg_map = np.array(seg_res['seg_map'])

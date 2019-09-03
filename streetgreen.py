@@ -107,8 +107,9 @@ def argument_parser():
 
 
 def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
-                n_job=1, job_id=0, bbox_str='amsterdam', grid_level=0, krige_only=False,
-                skip_overlay=False, prepare_only=False, use_panorama=False, all_years=False):
+                n_job=1, job_id=0, bbox_str='amsterdam', grid_level=0,
+                krige_only=False, skip_overlay=False, prepare_only=False,
+                use_panorama=False, all_years=False):
     from utils.selection import select_bbox, select_seg_model, select_green_model
     from API.tile_manager import TileManager
     from utils.mapping import create_map, green_res_to_shp
@@ -121,9 +122,8 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     krige_n_job = n_job
     krige_job_id = job_id
     if krige_only:
-        n_job=1
-        job_id=0
-        
+        n_job = 1
+        job_id = 0
 
     tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
                            job_id=job_id, **seg_kwargs,

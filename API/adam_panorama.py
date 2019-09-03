@@ -1,9 +1,7 @@
 import os
 from os.path import splitext
 import urllib.request
-from API.base_panorama import BasePanorama
-import numpy as np
-from models.deeplab import plot_segmentation
+from API.base_panorama import BasePanorama, _green_fractions
 
 
 def _meta_fp(panorama_fp):
@@ -21,9 +19,10 @@ class AdamPanorama(BasePanorama):
             data_dir=data_dir,
             data_src=data_src,
         )
+        self.seg_names = ["panorama"]
         self.seg_res = None
 
-    def parse(self, meta_data):
+    def parse_meta(self, meta_data):
         " Get some universally used data. "
         self.meta_data = meta_data
         self.latitude = meta_data["geometry"]["coordinates"][1]
@@ -44,4 +43,12 @@ class AdamPanorama(BasePanorama):
     def seg_run(self, model, show=False):
         " Do segmentation analysis on the picture. "
         seg_res = model.run(self.panorama_fp)
-        return seg_res
+        return {self.seg_names[0]: seg_res}
+
+    def download(self):
+        if not os.path.exists(self.panorama_fp):
+            urllib.request.urlretrieve(self.pano_url, self.panorama_fp)
+        self.is_downloaded = True
+
+    def seg_to_green(self, seg_res, green_model=None):
+        return _green_fractions(seg_res[self.seg_names[0]])
