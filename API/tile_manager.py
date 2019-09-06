@@ -19,7 +19,7 @@ from json.decoder import JSONDecodeError
 class TileManager(object):
     def __init__(self, tile_resolution=1024, bbox=None, grid_level=1,
                  n_job=1, job_id=0, seg_model=DeepLabModel, seg_kwargs={},
-                 green_model=ClassPercentage, green_kwargs={},
+                 green_model=ClassPercentage, green_kwargs={}, all_years=False,
                  **kwargs):
         NL_bbox = [
             [50.803721015, 3.31497114423],
@@ -83,7 +83,7 @@ class TileManager(object):
             tile = AdamPanoramaTile(
                 tile_name=tile_name, bbox=cur_bbox, grid_level=grid_level,
                 seg_model=self.seg_model, green_model=self.green_model,
-                **kwargs)
+                all_years=all_years, **kwargs)
             self.tile_list.append((tile, ix-i_min_x, iy-i_min_y))
 
         self.grid_level = grid_level
@@ -99,7 +99,8 @@ class TileManager(object):
             self.map_key = get_green_key(self.tile_list[0][0].pano_class,
                                          self.seg_model.id(),
                                          self.green_model.id(one_class=True),
-                                         self.grid_level)
+                                         self.grid_level,
+                                         all_years=all_years)
         else:
             self.map_key = "Unknown"
 
@@ -145,7 +146,8 @@ class TileManager(object):
             )
         )
 
-        krige_dir = os.path.join("data.amsterdam", "krige", overlay_name + "-" + self.map_key)
+        krige_dir = os.path.join("data.amsterdam", "krige",
+                                 overlay_name + "-" + self.map_key)
         os.makedirs(krige_dir, exist_ok=True)
         vario_fp = os.path.join(krige_dir, "variogram.json")
         try:
@@ -156,17 +158,15 @@ class TileManager(object):
                                          variogram_model="exponential")
             with open(vario_fp, "w") as fp:
                 json.dump(vario_kwargs, fp)
-        
-#         krige_greenery(self.all_green_res, None, None)
-        
-#         print(self.map_key)
+
         pbar = tqdm(total=self.n_tiles_x*self.n_tiles_y)
         for iy, green_row in enumerate(self.green_mat):
             for ix, green_res in enumerate(green_row):
                 pbar.update()
                 if (iy*len(green_row)+ix) % n_job != job_id:
                     continue
-                krige_fp = os.path.join(krige_dir, "krige_"+str(ix)+"_"+str(iy)+".json")
+                krige_fp = os.path.join(krige_dir,
+                                        "krige_"+str(ix)+"_"+str(iy)+".json")
                 try:
                     with open(krige_fp, "r") as fp:
                         krige = np.array(json.load(fp))
@@ -181,8 +181,11 @@ class TileManager(object):
                             niy = iy + idy
                             if niy < 0 or niy >= self.n_tiles_y:
                                 continue
-                            _extend_green_res(krige_green_res, self.green_mat[niy][nix])
-                    if len(krige_green_res) == 0 or len(krige_green_res['green']) <= 1:
+                            _extend_green_res(
+                                krige_green_res, self.green_mat[niy][nix])
+                    if (
+                            len(krige_green_res) == 0 or
+                            len(krige_green_res['green']) <= 1):
                         continue
                     x_start = self.x_start + ix*self.dx
                     x_end = x_start + self.dx
@@ -193,7 +196,8 @@ class TileManager(object):
                     lat_grid = np.linspace(y_start, y_end, tile_res,
                                            endpoint=False)
                     try:
-                        krige = krige_greenery(krige_green_res, lat_grid, long_grid,
+                        krige = krige_greenery(krige_green_res, lat_grid,
+                                               long_grid,
                                                init_kwargs=vario_kwargs)
                     except ValueError:
                         krige = np.zeros((tile_res, tile_res))

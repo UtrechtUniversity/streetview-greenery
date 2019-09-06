@@ -101,7 +101,8 @@ def argument_parser():
         default=False,
         dest="krige_only",
         action="store_true",
-        help="Only do the kriging in parallel; use if segmentation is there, but kriging not yet."
+        help="Only do the kriging in parallel; use if segmentation is there,"
+             " but kriging not yet."
     )
     return parser
 
@@ -110,7 +111,8 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
                 n_job=1, job_id=0, bbox_str='amsterdam', grid_level=0,
                 krige_only=False, skip_overlay=False, prepare_only=False,
                 use_panorama=False, all_years=False):
-    from utils.selection import select_bbox, select_seg_model, select_green_model
+    from utils.selection import select_bbox, select_seg_model
+    from utils.selection import select_green_model
     from API.tile_manager import TileManager
     from utils.mapping import create_map, green_res_to_shp
 
@@ -136,7 +138,8 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     if prepare_only or skip_overlay:
         return
 
-    overlay, key = tile_man.krige_map(overlay_name=bbox_str, n_job=krige_n_job, job_id=krige_job_id)
+    overlay, key = tile_man.krige_map(overlay_name=bbox_str, n_job=krige_n_job,
+                                      job_id=krige_job_id)
     print(overlay)
     if krige_n_job != 1:
         return
