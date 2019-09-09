@@ -16,11 +16,10 @@ if [ $# -ge 1 ]; then
     if [ "${NEW_EXTRA_ARGS[*]}" != "" ]; then
         EXTRA_ARGS=${NEW_EXTRA_ARGS[@]:1}
     fi
-    NEW_CLASSES=(`grep 'KRIGE_CLASSES' $CFG_FILE`)
+    NEW_CLASSES=(`grep 'KRIGE_CLASSES' $CFG_FILE | tr '[:upper:]' '[:lower:]'`)
     if [ "${NEW_CLASSES[*]}" != "" ]; then
         CLASSES=${NEW_CLASSES[@]:1}
     fi
-    echo ${CLASSES[*]}
 fi
 
 

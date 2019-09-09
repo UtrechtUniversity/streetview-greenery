@@ -15,6 +15,7 @@ from utils import _empty_green_res
 from API.idgen import get_green_key
 from utils.time_conversion import get_time_from_str
 from utils.sun import degree_to_meter, fast_coor_to_dist
+from json.decoder import JSONDecodeError
 
 
 def get_close_neighbors(mini_tile_list, mini_x, mini_y, x_base, y_base,
@@ -194,15 +195,13 @@ class AdamPanoramaTile(AdamPanoramaManager):
         try:
             with open(green_fp, "r") as f:
                 green_res = json.load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, JSONDecodeError):
             self.get(**get_kwargs)
             self.load(**load_kwargs)
             if prepare_only:
                 self.download()
                 return _empty_green_res()
-#             if prepare_only:
-#                 return _empty_green_res()
-#             self.seg_analysis(**seg_kwargs)
+
             green_res = self.green_pipe(**green_kwargs)
             if len(green_res["green"]) > 0:
                 with open(green_fp, "w") as f:
