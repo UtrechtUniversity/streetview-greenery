@@ -4,4 +4,4 @@ N_JOBS_KRIGE= 16
 
 EXTRA_ARGS= -l 3 --historical-data
 
-KRIGE_CLASSES= vegetation traffic
+KRIGE_CLASSES= all
