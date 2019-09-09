@@ -259,6 +259,7 @@ class TileManager(object):
         return green_res
 
     def resolution(self):
+        " Get the image resolution. "
         res_x = self.n_tiles_x*2**self.grid_level
         res_y = self.n_tiles_y*2**self.grid_level
         return [res_x, res_y]
