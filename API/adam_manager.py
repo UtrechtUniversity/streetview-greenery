@@ -8,6 +8,7 @@ from API.adam_panorama_cubic import AdamPanoramaCubic
 from API.panorama_manager import BasePanoramaManager
 from json.decoder import JSONDecodeError
 from tqdm import tqdm
+from time import sleep
 
 
 def _convert_meta(meta_data):
@@ -60,16 +61,28 @@ class AdamPanoramaManager(BasePanoramaManager):
         """
         meta_list = []
 
-        try:
-            response = requests.get(self.url, params=params)
-        except requests.exceptions.RequestException:
-            print("HTTP request failed.")
+        MAX_TRIES = 10
+        n_try = 0
+        while not n_try < MAX_TRIES:
+            try:
+                response = requests.get(self.url, params=params)
+            except requests.exceptions.RequestException:
+                print("HTTP request failed.")
+                sleep(60)
 
-        if response.status_code != 200:
-            raise ValueError(
-                f"Error (data.amsterdam): HTTP status code:"
-                f" {response.status_code}"
-            )
+            if response.status_code == 200:
+                break
+            else:
+                print(
+                    f"Error (data.amsterdam): HTTP status code:"
+                    f" {response.status_code}"
+                )
+                sleep(60)
+            n_try += 1
+
+        if n_try == MAX_TRIES:
+            raise ValueError("Error (data.amsterdam): Error retrieving meta"
+                             " data.")
 
         # Try to load data into a dictionary.
         try:
@@ -82,10 +95,17 @@ class AdamPanoramaManager(BasePanoramaManager):
         meta_list.extend(new_list)
 
         while response_dict['_links']['next']['href'] is not None:
-            try:
-                response = requests.get(
-                    response_dict['_links']['next']['href'])
-            except requests.RequestException:
+            n_try = 0
+            while n_try < MAX_TRIES:
+                try:
+                    response = requests.get(
+                        response_dict['_links']['next']['href'])
+                    break
+                except requests.RequestException:
+                    print(f"Error (data.amsterdam) HTTP request failed.")
+                    sleep(60)
+                    n_try += 1
+            if n_try == MAX_TRIES:
                 raise ValueError(
                     f"HTTP request failed with code {response.status_code}"
                 )
