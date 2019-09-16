@@ -67,7 +67,7 @@ function parse_classes {
 
 if [ $# -ge 1 ]; then
     CFG_FILE=$1
-    NEW_JOBS=(`grep 'N_JOBS_PREPARE' $CFG_FILE`)
+    NEW_JOBS=(`grep 'N_JOBS_KRIGE' $CFG_FILE`)
     if [ "${NEW_JOBS[*]}" != "" ]; then
         N_JOBS=${NEW_JOBS[1]}
     fi
@@ -77,24 +77,7 @@ if [ $# -ge 1 ]; then
     fi
     NEW_CLASSES=(`grep 'KRIGE_CLASSES' $CFG_FILE | tr '[:upper:]' '[:lower:]'`)
     parse_classes
-#     if [ "${NEW_CLASSES[*]}" != "" ]; then
-#         CLASSES=${NEW_CLASSES[@]:1}
-#     fi
 fi
-
-# exit 0
-
-
-# if [ "${CLASSES[0]}"  == "all" ]; then
-# else
-#     for CAT in ${CLASSES[*]}; do
-#         if ! valid_cat "$CAT"; then
-#             echo "Error: $CAT is not a valid category (in config file)."
-#             exit 129
-#         fi
-#     done
-# fi
-
 
 
 COMMAND_FILE="temp_commands.txt"
