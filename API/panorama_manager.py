@@ -4,7 +4,6 @@ Manager of a set of panoramas.
 import os
 import json
 import numpy as np
-from tqdm import tqdm
 import inspect
 import time
 

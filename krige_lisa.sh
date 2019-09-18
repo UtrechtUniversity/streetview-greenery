@@ -93,7 +93,6 @@ EOF_CAT
 let "NJOB_MAX=N_JOBS-1"
 
 
-
 for CAT in "${CLASSES[@]}"; do
     for JOB in `seq 0 $NJOB_MAX`; do
         echo "\${python} ./streetgreen.py --bbox amsterdam_almere -g '$CAT' --model deeplab-xception_71 --njobs ${N_JOBS} --jobid $JOB" --parallel-krige $EXTRA_ARGS >> $COMMAND_FILE

@@ -63,7 +63,7 @@ class AdamPanoramaManager(BasePanoramaManager):
 
         MAX_TRIES = 10
         n_try = 0
-        while not n_try < MAX_TRIES:
+        while n_try < MAX_TRIES:
             try:
                 response = requests.get(self.url, params=params)
             except requests.exceptions.RequestException:
