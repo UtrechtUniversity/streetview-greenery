@@ -3,7 +3,7 @@
 import os
 
 import numpy as np
-from sklearn.linear_model.base import LinearRegression
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 
 from utils.selection import select_bbox, select_seg_model, select_green_model

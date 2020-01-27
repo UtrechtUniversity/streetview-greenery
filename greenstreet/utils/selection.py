@@ -1,8 +1,8 @@
 
 import sys
 
-from models import DeepLabModel
-from greenery import ClassPercentage
+from greenstreet.models import DeepLabModel
+from greenstreet.greenery import ClassPercentage
 
 
 def select_area(area, seg_model="mobilenet"):

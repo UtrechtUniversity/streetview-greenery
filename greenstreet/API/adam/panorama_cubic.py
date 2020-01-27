@@ -4,51 +4,13 @@ import urllib.request
 
 import numpy as np
 
-from models.deeplab import plot_segmentation
-from API.base_panorama import BasePanorama
-from API.idgen import get_green_key
-
-
-def _corrected_fractions(seg_map, names):
-    """ Compute the class percentages, and correct for the angle
-        with cubic images.
-        The renormalization factors depend on how far from the middle
-        the pixels are. In the middle, the factor is 1, and away from that:
-        f(dx, dy) = (dx**2 + dy**2)^{-3/2},
-        where dx, dy in [-1, 1].
-
-    Arguments:
-    ----------
-    seg_map: np.array
-        2D Array with assigned classes (int).
-    names: np.array, str
-        Class names associated with the numbers of seg_map.
-    """
-
-    nclass = 200  # Maximum number of class, actual can be lower.
-    ny = seg_map.shape[0]
-    nx = seg_map.shape[1]
-    seg_frac_dict = {}
-    seg_frac = np.zeros(nclass)
-    tot_frac = 0
-    for iy in range(ny):
-        dy = 2*iy/ny-1
-        for ix in range(nx):
-            # Compute the correction factor.
-            dx = 2*ix/nx-1
-            fac = (dx**2+dy**2+1)**-1.5
-            seg_frac[seg_map[iy, ix]] += fac
-            tot_frac += fac
-
-    # Normalize the class percentages.
-    for i in range(nclass):
-        if seg_frac[i] > 0:
-            seg_frac_dict[names[i]] = seg_frac[i]/tot_frac
-    return seg_frac_dict
+from greenstreet.models.deeplab import plot_segmentation
+from greenstreet.API.base.panorama import BasePanorama
+from greenstreet.API.idgen import get_green_key
 
 
 class AdamPanoramaCubic(BasePanorama):
-    " Object for using the Amsterdam data API with equirectengular data. "
+    "Object for using the Amsterdam data API with equirectengular data."
     def __init__(self, meta_data, data_src="data.amsterdam", data_dir=None):
         self.sides = {
             "front": "f",
@@ -109,7 +71,8 @@ class AdamPanoramaCubic(BasePanorama):
 
         self.load_segmentation(self.segment_fp)
         if len(self.all_seg_res) < 1:
-            self.all_seg_res[model_id].update(self.seg_run(seg_model, show=show))
+            self.all_seg_res[model_id].update(
+                self.seg_run(seg_model, show=show))
             self.save_segmentation(self.segment_fp)
         elif show:
             self.show()
@@ -195,3 +158,41 @@ class AdamPanoramaCubic(BasePanorama):
                 plot_labels[name_id] = fractions[name]
             plot_segmentation(pano_fp, seg_map, color_map,
                               plot_labels=plot_labels)
+
+
+def _corrected_fractions(seg_map, names):
+    """ Compute the class percentages, and correct for the angle
+        with cubic images.
+        The renormalization factors depend on how far from the middle
+        the pixels are. In the middle, the factor is 1, and away from that:
+        f(dx, dy) = (dx**2 + dy**2)^{-3/2},
+        where dx, dy in [-1, 1].
+
+    Arguments:
+    ----------
+    seg_map: np.array
+        2D Array with assigned classes (int).
+    names: np.array, str
+        Class names associated with the numbers of seg_map.
+    """
+
+    nclass = 200  # Maximum number of class, actual can be lower.
+    ny = seg_map.shape[0]
+    nx = seg_map.shape[1]
+    seg_frac_dict = {}
+    seg_frac = np.zeros(nclass)
+    tot_frac = 0
+    for iy in range(ny):
+        dy = 2*iy/ny-1
+        for ix in range(nx):
+            # Compute the correction factor.
+            dx = 2*ix/nx-1
+            fac = (dx**2+dy**2+1)**-1.5
+            seg_frac[seg_map[iy, ix]] += fac
+            tot_frac += fac
+
+    # Normalize the class percentages.
+    for i in range(nclass):
+        if seg_frac[i] > 0:
+            seg_frac_dict[names[i]] = seg_frac[i]/tot_frac
+    return seg_frac_dict

@@ -26,8 +26,8 @@ def main():
     panoramas.seg_analysis()
     # Get greenery from segmentation analysis.
     green_res = panoramas.green_analysis()
-    # Plot the kriged map of the greenery.
 
+    # Plot the kriged map of the greenery.
     overlay_fp = os.path.join(
         panoramas.data_dir, "krige_"+panoramas.id+".json"
     )

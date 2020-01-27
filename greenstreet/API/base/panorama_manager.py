@@ -1,17 +1,17 @@
 '''
 Manager of a set of panoramas.
 '''
+from abc import ABC
 import os
 import json
 import numpy as np
 import inspect
 import time
-
-from models import DeepLabModel
-from abc import ABC
-from greenery import ClassPercentage
 from urllib.error import HTTPError
-from utils.mapping import _empty_green_res, _add_green_res
+
+from greenstreet.models import DeepLabModel
+from greenstreet.greenery import ClassPercentage
+from greenstreet.utils.mapping import _empty_green_res, _add_green_res
 
 
 class BasePanoramaManager(ABC):

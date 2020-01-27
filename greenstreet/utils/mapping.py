@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-import folium
-import numpy as np
 import json
 from json.decoder import JSONDecodeError
+
+import folium
+import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model.base import LinearRegression
+from sklearn.linear_model import LinearRegression
 from tqdm import tqdm
 # import gdal
 # import osr

@@ -4,7 +4,7 @@ import sys
 import numpy as np
 from osgeo import gdal, osr
 
-from utils.mapping import create_map, MapImageOverlay
+from greenstreet.utils.mapping import MapImageOverlay
 
 
 def tiff_to_overlay(tiff_fp, name=None, min_green=-0.03, max_green=None):
@@ -17,11 +17,12 @@ def tiff_to_overlay(tiff_fp, name=None, min_green=-0.03, max_green=None):
 #     print(srs.GetAttrValue('geogcs'))
     if srs.GetAttrValue('geogcs') == "WGS 84":
         warped_ds = gdal.Warp('', ds, dstSRS='EPSG:4326', format='VRT',
-                              xRes=ds.GetGeoTransform()[1], yRes=ds.GetGeoTransform()[5])
+                              xRes=ds.GetGeoTransform()[1],
+                              yRes=ds.GetGeoTransform()[5])
     else:
         warped_ds = gdal.Warp('', ds, dstSRS='EPSG:4326', format='VRT',
                               width=ds.RasterXSize, height=ds.RasterYSize)
-       
+
     warped_array = np.array(warped_ds.GetRasterBand(1).ReadAsArray())
     warped_array = np.flip(warped_array, axis=0)
     NO_DATA = warped_ds.GetRasterBand(1).GetNoDataValue()

@@ -1,13 +1,12 @@
-
-from models.deeplab import plot_segmentation
-
 from os.path import splitext, join
 from abc import ABC
 import json
-import numpy as np
-from utils.size import b64_to_dict, dict_to_b64
-from API.idgen import get_green_key
 from json.decoder import JSONDecodeError
+
+import numpy as np
+
+from greenstreet.API.idgen import get_green_key
+from greenstreet.utils.size import b64_to_dict, dict_to_b64
 
 
 def _meta_fp(panorama_fp):
@@ -128,9 +127,7 @@ class BasePanorama(ABC):
                 self.seg_analysis(seg_model)
             seg_res = self.all_seg_res[seg_id]
             seg_frac = _green_fractions(self.panorama_fp, seg_res)
-#             print(seg_frac)
             self.all_green_res[key] = seg_frac
-#             green_model.test(seg_frac)
             self.save_greenery(green_fp)
         return green_model.test(self.all_green_res[key])
 

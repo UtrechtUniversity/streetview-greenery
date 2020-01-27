@@ -3,11 +3,10 @@ import json
 import requests
 import os
 
-from API import AdamPanorama
-from API.adam_panorama_cubic import AdamPanoramaCubic
-from API.panorama_manager import BasePanoramaManager
+from greenstreet.API.adam.panorama import AdamPanorama
+from greenstreet.API.adam.panorama_cubic import AdamPanoramaCubic
+from greenstreet.API.base.panorama_manager import BasePanoramaManager
 from json.decoder import JSONDecodeError
-from tqdm import tqdm
 from time import sleep
 
 

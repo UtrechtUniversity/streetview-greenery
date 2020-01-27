@@ -1,7 +1,8 @@
 import os
 from os.path import splitext
 import urllib.request
-from API.base_panorama import BasePanorama, _green_fractions
+
+from greenstreet.API.base.panorama import BasePanorama, _green_fractions
 
 
 def _meta_fp(panorama_fp):

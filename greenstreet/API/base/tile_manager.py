@@ -1,19 +1,20 @@
 import os
 import json
 from math import cos, pi, ceil, floor
+from json.decoder import JSONDecodeError
 
 from tqdm import tqdm
 import numpy as np
 
-from API.adam_tile import AdamPanoramaTile
-from models.deeplab import DeepLabModel
-from greenery.greenery import ClassPercentage
-from greenery.visualization import krige_greenery, _alpha_from_coordinates,\
-    _semivariance
-from utils.mapping import MapImageOverlay
-from utils import _empty_green_res, _extend_green_res
-from API.idgen import get_green_key
-from json.decoder import JSONDecodeError
+from greenstreet.API.adam.tile import AdamPanoramaTile
+from greenstreet.models.deeplab import DeepLabModel
+from greenstreet.greenery.greenery import ClassPercentage
+from greenstreet.greenery.visualization import krige_greenery
+from greenstreet.greenery.visualization import _alpha_from_coordinates
+from greenstreet.greenery.visualization import _semivariance
+from greenstreet.utils.mapping import MapImageOverlay
+from greenstreet.utils import _empty_green_res, _extend_green_res
+from greenstreet.API.idgen import get_green_key
 
 
 class TileManager(object):

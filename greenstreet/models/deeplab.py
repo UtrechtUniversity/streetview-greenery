@@ -17,9 +17,9 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 import numpy as np
 from PIL import Image
-
 import tensorflow as tf
-from models.city_scapes import labels as cs_labels
+
+from greenstreet.models.city_scapes import labels as cs_labels
 
 
 def _get_model(model_name):

@@ -42,7 +42,7 @@ The script "streetgreen.py" is the workhorse of the package, downloading and pro
 
 By default the program will select some area in Amsterdam/Almere and it will sample panoramas in a grid. At the coarsest level it will obtain one data point for each 1km x 1km tile. Then from the greenery measure of each of these tiles, a map will be constructed using a Kriging procedure. 
 
-Options for the "street_green.py" script can be obtained by navigating to the installation directory and typing:
+Options for the "streetgreen.py" script can be obtained by navigating to the installation directory and typing:
 
 ```sh
 ./streetgreen.py --help

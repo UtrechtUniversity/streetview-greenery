@@ -4,19 +4,17 @@ Visualization of greenery measures.
 
 from math import sqrt, pi, cos
 
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 import numpy as np
-from scipy.interpolate import griddata
-
 from pykrige import OrdinaryKriging
 from pykrige.core import _calculate_variogram_model
-from pykrige.variogram_models import spherical_variogram_model,\
-    exponential_variogram_model, gaussian_variogram_model
-
-from utils.mapping import MapImageOverlay
-from scipy.spatial.distance import euclidean, sqeuclidean, pdist
-from matplotlib import pyplot as plt
+from pykrige.variogram_models import spherical_variogram_model
+from pykrige.variogram_models import exponential_variogram_model
+from scipy.interpolate import griddata
+from scipy.spatial.distance import pdist
 from tqdm import tqdm
+
+from greenstreet.utils.mapping import MapImageOverlay
 
 
 def plot_greenery(green_res, cmap="RdYlGn", show=True, title=None):
@@ -220,7 +218,8 @@ def _semivariance(green_matrix, nlags=None, variogram_model="exponential",
             for jy, j_green_row in enumerate(green_matrix):
                 for jx, j_green_res in enumerate(j_green_row):
                     pbar.update()
-                    dt, gt = _compute_dist(ix, iy, i_green_res, jx, jy, j_green_res)
+                    dt, gt = _compute_dist(
+                        ix, iy, i_green_res, jx, jy, j_green_res)
                     all_d.append(dt)
                     all_g.append(gt)
 
@@ -277,7 +276,8 @@ def _semivariance(green_matrix, nlags=None, variogram_model="exponential",
     return krige_kwargs
 
 
-def _alpha_from_coordinates(green_res, lat_grid, long_grid, min_dist=1, max_dist=6):
+def _alpha_from_coordinates(green_res, lat_grid, long_grid, min_dist=1,
+                            max_dist=6):
     lat = green_res['lat']
     long = green_res['long']
     lat_min = lat_grid.min()
