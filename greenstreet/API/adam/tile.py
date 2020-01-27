@@ -7,15 +7,15 @@ tiles instead of circles.
 import os
 from math import cos, pi, sqrt
 import json
+from json.decoder import JSONDecodeError
 
 import numpy as np
 
-from API.adam_manager import AdamPanoramaManager
-from utils import _empty_green_res
-from API.idgen import get_green_key
-from utils.time_conversion import get_time_from_str
-from utils.sun import degree_to_meter, fast_coor_to_dist
-from json.decoder import JSONDecodeError
+from greenstreet.API.adam.manager import AdamPanoramaManager
+from greenstreet.utils import _empty_green_res
+from greenstreet.API.idgen import get_green_key
+from greenstreet.utils.time_conversion import get_time_from_str
+from greenstreet.utils.sun import degree_to_meter
 
 
 def get_close_neighbors(mini_tile_list, mini_x, mini_y, x_base, y_base,

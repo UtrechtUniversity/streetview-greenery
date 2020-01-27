@@ -67,12 +67,12 @@ setup(
         'requests',
         'matplotlib',
         'pykrige',
+        'setuptools',
     ],
 #     extras_require={},
     entry_points={
         'console_scripts': [
-            'asreview=asreview.__main__:main',
-            'asr=asreview.__main__:main_depr',
+            'greenstreet = greenstreet.__main__:main',
         ],
     },
     project_urls={

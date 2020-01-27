@@ -6,7 +6,6 @@ from json.decoder import JSONDecodeError
 from tqdm import tqdm
 import numpy as np
 
-from greenstreet.API.adam.tile import AdamPanoramaTile
 from greenstreet.models.deeplab import DeepLabModel
 from greenstreet.greenery.greenery import ClassPercentage
 from greenstreet.greenery.visualization import krige_greenery
@@ -15,12 +14,14 @@ from greenstreet.greenery.visualization import _semivariance
 from greenstreet.utils.mapping import MapImageOverlay
 from greenstreet.utils import _empty_green_res, _extend_green_res
 from greenstreet.API.idgen import get_green_key
+from greenstreet.API.utils import get_tile_class
 
 
 class TileManager(object):
     def __init__(self, tile_resolution=1024, bbox=None, grid_level=1,
                  n_job=1, job_id=0, seg_model=DeepLabModel, seg_kwargs={},
                  green_model=ClassPercentage, green_kwargs={}, all_years=False,
+                 tile_type="adam",
                  **kwargs):
         NL_bbox = [
             [50.803721015, 3.31497114423],
@@ -81,7 +82,8 @@ class TileManager(object):
             if tile_name in self.empty_tiles:
                 continue
 
-            tile = AdamPanoramaTile(
+            tile_class = get_tile_class(tile_type)
+            tile = tile_class(
                 tile_name=tile_name, bbox=cur_bbox, grid_level=grid_level,
                 seg_model=self.seg_model, green_model=self.green_model,
                 all_years=all_years, **kwargs)

@@ -1,1 +1,1 @@
-from models.deeplab import DeepLabModel, plot_segmentation
+from greenstreet.models.deeplab import DeepLabModel, plot_segmentation
