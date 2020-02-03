@@ -17,9 +17,19 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 import numpy as np
 from PIL import Image
-import tensorflow as tf
 
 from greenstreet.models.city_scapes import labels as cs_labels
+
+try:
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    import logging
+    logging.getLogger("tensorflow").setLevel(logging.ERROR)
+    import tensorflow.compat.v1 as tf
+
+    tf.disable_v2_behavior()
+    tf.logging.set_verbosity(tf.logging.ERROR)
+except ImportError:
+    import tensorflow as tf
 
 
 def _get_model(model_name):

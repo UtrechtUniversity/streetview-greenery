@@ -100,5 +100,3 @@ def argument_parser():
              " but kriging not yet."
     )
     return parser
-
-

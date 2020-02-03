@@ -2,7 +2,9 @@ import os
 from os.path import splitext
 import urllib.request
 
-from greenstreet.API.base.panorama import BasePanorama, _green_fractions
+from greenstreet.API.base.panorama import BasePanorama
+from urllib.error import HTTPError
+from time import sleep
 
 
 def _meta_fp(panorama_fp):
@@ -12,44 +14,47 @@ def _meta_fp(panorama_fp):
 
 class AdamPanorama(BasePanorama):
     " Object for using the Amsterdam data API with equirectengular data. "
-    def __init__(self, meta_data, data_src="data.amsterdam", data_dir=None):
-        if data_dir is None:
-            data_dir = os.path.join(data_src, "pics")
+    name = "adam-panorama"
+
+    def __init__(self, meta_data, data_dir):
+        self.data_dir = data_dir
         super(AdamPanorama, self).__init__(
             meta_data=meta_data,
-            data_dir=data_dir,
-            data_src=data_src,
         )
-        self.seg_names = ["panorama"]
-        self.seg_res = None
+        os.makedirs(self.data_dir, exist_ok=True)
 
-    def parse_meta(self, meta_data):
+    def parse_meta_data(self, meta_data):
         " Get some universally used data. "
         self.meta_data = meta_data
         self.latitude = meta_data["geometry"]["coordinates"][1]
         self.longitude = meta_data["geometry"]["coordinates"][0]
         self.id = meta_data["pano_id"]
         self.timestamp = meta_data["timestamp"]
-
-    def fp_from_meta(self, meta_data):
-        " Generate the meta and picture filenames. "
         self.pano_url = meta_data["equirectangular_url"]
-        self.filename = "panorama.jpg"
+        self.filename = self.name + ".jpg"
         self.panorama_fp = os.path.join(self.data_dir, self.filename)
-        os.makedirs(self.data_dir, exist_ok=True)
         self.meta_fp = _meta_fp(self.panorama_fp)
-        if not os.path.exists(self.panorama_fp):
-            urllib.request.urlretrieve(self.pano_url, self.panorama_fp)
 
-    def seg_run(self, model, show=False):
+    def compute_segmentation(self, model):
         " Do segmentation analysis on the picture. "
-        seg_res = model.run(self.panorama_fp)
-        return {self.seg_names[0]: seg_res}
+        return model.run(self.panorama_fp)
 
-    def download(self):
-        if not os.path.exists(self.panorama_fp):
-            urllib.request.urlretrieve(self.pano_url, self.panorama_fp)
-        self.is_downloaded = True
+    def download(self, n_try=5, timeout=3):
+        if os.path.exists(self.panorama_fp):
+            self.is_downloaded = True
+            return
+
+        self.is_downloaded = False
+        for _ in range(n_try):
+            try:
+                urllib.request.urlretrieve(self.pano_url, self.panorama_fp)
+                self.is_downloaded = True
+            except (ConnectionError, HTTPError):
+                sleep(timeout)
+            self.is_downloaded = True
+        if not self.is_downloaded:
+            raise HTTPError(404, f"Error downloading file from link "
+                            f"{self.pano_url}")
 
     def seg_to_green(self, seg_res, green_model=None):
-        return _green_fractions(seg_res[self.seg_names[0]])
+        return green_model.transform(seg_res[self.name])

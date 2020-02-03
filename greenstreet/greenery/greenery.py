@@ -31,7 +31,7 @@ def compute_weights(matrix_shape):
 
 
 class ClassPercentage(object):
-    " Greenery as the percentage of the pixels from the vegetation class. "
+    "Greenery as the percentage of the pixels from the vegetation class."
     def __init__(self, myclass="vegetation"):
         self.myclass = myclass
         self._id = f"class_percentage"

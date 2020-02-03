@@ -36,17 +36,27 @@ def _convert_meta(meta_data):
 class AdamPanoramaManager(BasePanoramaManager):
     " Object for using the Amsterdam data API "
 
-    def __init__(self, data_dir="data.amsterdam", cubic_pictures=True,
+    def __init__(self, data_dir="data.amsterdam", use_panorama=True,
                  **kwargs):
         super(AdamPanoramaManager, self).__init__(data_dir=data_dir, **kwargs)
         self.url = "https://api.data.amsterdam.nl/panorama/panoramas/"
-        if cubic_pictures:
-            self.pano_class = AdamPanoramaCubic
-        else:
+        if use_panorama:
             self.pano_class = AdamPanorama
+        else:
+            self.pano_class = AdamPanoramaCubic
+
+        self.use_panorama = use_panorama
+
+    def id(self):
+        base_id = super(AdamPanoramaManager, self).id()
+        if self.use_panorama:
+            base_id += "-panorama"
+        else:
+            base_id += "-cubic"
+        return base_id
 
     def request_meta(self, params):
-        """ Get meta data from data.amsterdam.
+        """Get meta data from data.amsterdam.
 
         Arguments
         ---------
@@ -142,7 +152,7 @@ class AdamPanoramaManager(BasePanoramaManager):
         params.update(kwargs)
         return params
 
-    def new_panorama(self, meta_data, data_dir, **kwargs):
+    def new_panorama(self, meta_data, data_dir):
         data_dir = os.path.join(data_dir, meta_data['pano_id'])
-        return self.pano_class(meta_data=meta_data, data_dir=data_dir,
-                               **kwargs)
+        new_panorama = self.pano_class(meta_data=meta_data, data_dir=data_dir)
+        return new_panorama

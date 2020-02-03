@@ -1,13 +1,15 @@
-def get_green_key(myclass, seg_id, green_id, grid_level=None, all_years=False):
-    key = ""
-    key += f"{green_id}-{seg_id}-"
 
-    if myclass.__name__ == "AdamPanorama":
+
+def get_green_key(data_source, green_measure, seg_model, use_panorama=False,
+                  grid_level=None,
+                  all_years=False):
+    key = ""
+    key += f"{data_source}-{green_measure}-{seg_model}-"
+
+    if use_panorama:
         key += "panorama"
-    elif myclass.__name__ == "AdamPanoramaCubic":
-        key += "cubic"
     else:
-        key += "unknown"
+        key += "cubic"
 
     if grid_level is not None:
         key += f"-lvl_{grid_level}"
