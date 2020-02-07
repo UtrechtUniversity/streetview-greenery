@@ -1,0 +1,89 @@
+DROP TABLE IF EXISTS panorama;
+DROP TABLE IF EXISTS download;
+DROP TABLE IF EXISTS segment;
+DROP TABLE IF EXISTS greenery;
+DROP TABLE IF EXISTS queries;
+DROP TABLE IF EXISTS panorama_type;
+DROP TABLE IF EXISTS segment_type;
+DROP TABLE IF EXISTS green_type;
+DROP TABLE IF EXISTS tile;
+DROP TABLE IF EXISTS green_class;
+DROP TABLE IF EXISTS result;
+
+CREATE TABLE panorama (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL UNIQUE,
+	tile_id INTEGER NOT NULL,
+	latitude FLOAT NOT NULL,
+	longitude FLOAT NOT NULL,
+	created TIMESTAMP NOT NULL,
+	FOREIGN KEY (tile_id) REFERENCES tile (id)
+);
+
+CREATE TABLE download (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	pano_id INTEGER NOT NULL,
+	pano_type_id INTEGER NOT NULL,
+	complete INTEGER NOT NULL,
+	FOREIGN KEY (pano_id) REFERENCES panorama (id),
+	FOREIGN KEY (pano_type_id) REFERENCES panorama_type (id)
+);
+
+CREATE TABLE segment (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	seg_type_id INTEGER NOT NULL,
+	pano_type_id INTEGER NOT NULL,
+	FOREIGN KEY (seg_type_id) REFERENCES segment_type (id),
+	FOREIGN KEY (pano_type_id) REFERENCES panorama_type (id)
+);
+
+CREATE TABLE greenery (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	pano_id INTEGER NOT NULL,
+	seg_type_id INTEGER NOT NULL,
+	green_type_id INTEGER NOT NULL,
+	FOREIGN KEY (pano_id) REFERENCES panorama (id),
+	FOREIGN KEY (seg_type_id) REFERENCES segment_type (id),
+	FOREIGN KEY (green_type_id) REFERENCES green_type (id)
+);
+
+CREATE TABLE queries (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	query CHAR NOT NULL UNIQUE,
+	pano_id INTEGER NOT NULL,
+	FOREIGN KEY (pano_id) REFERENCES panorama (id)
+);
+
+CREATE TABLE panorama_type (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE segment_type (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL UNIQUE
+);
+
+
+CREATE TABLE green_type (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE tile (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE green_class (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE result (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	value FLOAT NOT NULL,
+	green_id INTEGER NOT NULL,
+	FOREIGN KEY (green_id) REFERENCES greenery (id)
+);
+	
