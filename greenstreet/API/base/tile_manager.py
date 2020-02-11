@@ -16,6 +16,10 @@ from greenstreet.API.idgen import get_green_key
 from greenstreet.utils.selection import select_bbox
 from greenstreet.sqlock import SQLiteLock
 from greenstreet.data import GreenData
+from greenstreet.query import GridQuery
+from greenstreet.meta import AdamMetaData
+from greenstreet.API.adam.job import AdamPanoramaJob
+from os.path import isfile
 
 
 class TileManager(object):
@@ -52,21 +56,43 @@ class TileManager(object):
             grid_level=grid_level,
             all_years=all_years)
         self.initialize_tiles()
+        self.pano_ids = None
 
     def initialize_tiles(self):
-        from greenstreet.API.adam.tile import AdamTile
+#         from greenstreet.API.adam.tile import AdamTile
 
         for tile_data in self.tile_list.reshape(-1):
-            data_dir = os.path.join(self.data_dir, tile_data["name"])
-            tile_data["tile"] = AdamTile(
-                data_dir=data_dir, bbox=tile_data["bbox"],
-                grid_level=self.grid_level, all_years=self.all_years
-            )
+#             data_dir = os.path.join(self.data_dir, tile_data["name"])
+            tile_data["query"] = GridQuery(
+                bbox=tile_data["bbox"], grid_level=self.grid_level)
+#             tile_data["tile"] = AdamTile(
+#                 data_dir=data_dir, bbox=tile_data["bbox"],
+#                 grid_level=self.grid_level, all_years=self.all_years
+#             )
 
     def get_meta_data(self):
         for tile_data in self.tile_list.reshape(-1):
-            tile = tile_data["tile"]
-            tile.get_meta_data()
+            if "meta" in tile_data:
+                continue
+            param = tile_data["query"].param
+            meta_fp = os.path.join(self.tiles_dir, tile_data["name"],
+                                   "meta.json")
+            try:
+                tile_data["meta"] = AdamMetaData.from_file(meta_fp)
+            except FileNotFoundError:
+                tile_data["meta"] = AdamMetaData.from_download(param)
+                os.makedirs(os.path.dirname(meta_fp), exist_ok=True)
+                tile_data["meta"].to_file(meta_fp)
+
+    def query(self):
+        if self.pano_ids is not None:
+            return self.pano_ids
+        self.pano_ids = {}
+        self.get_meta_data()
+        for tile_data in self.tile_list.reshape(-1):
+            pano_ids = tile_data["query"].sample_panoramas(tile_data["meta"])
+            self.pano_ids.update({pano_id: tile_data for pano_id in pano_ids})
+        return self.pano_ids
 
     def meta_summary(self):
         total_pictures = 0
@@ -85,10 +111,26 @@ class TileManager(object):
               f" {avail_pictures}/{total_pictures} pictures")
 
     def download(self):
-        for tile_data in self.tile_list.reshape(-1):
-            tile = tile_data["tile"]
-            tile.get_meta_data()
-            tile.download()
+        pano_ids = self.query()
+        jobs = [
+            {
+                "data_dir": _data_dir(self.tiles_dir, tile_data["name"], pano_id),
+                "program": "download",
+                "pano_id": pano_id,
+            }
+            for pano_id, tile_data in pano_ids.items()
+        ]
+        job_runner = AdamPanoramaJob()
+        for job in jobs:
+            meta_fp = os.path.join(job["data_dir"], "meta.json")
+            pano_id = job.pop("pano_id")
+            if not isfile(meta_fp):
+                os.makedirs(job["data_dir"], exist_ok=True)
+                tile_data = pano_ids[pano_id]
+                tile_data["meta"].to_file(meta_fp, pano_id=pano_id)
+
+            result = job_runner.execute(**job)
+            print(result)
 
     def greenery(self, compute=False, update=False):
         all_green_res = GreenData()
@@ -236,6 +278,10 @@ class TileManager(object):
         res_x = self.n_tiles_x*2**self.grid_level
         res_y = self.n_tiles_y*2**self.grid_level
         return [res_x, res_y]
+
+
+def _data_dir(tile_dir, tile_name, pano_id):
+    return os.path.join(tile_dir, tile_name, "pics", pano_id)
 
 
 def compute_tiles(bbox, tile_resolution):

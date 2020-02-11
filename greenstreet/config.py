@@ -7,3 +7,6 @@ PICTURE_NAMES = {
 INV_PICTURE_NAMES = {}
 for pic_type, files in PICTURE_NAMES.items():
     INV_PICTURE_NAMES.update({file: pic_type for file in files})
+
+STATUS_OK = 0
+STATUS_FAIL = 1
