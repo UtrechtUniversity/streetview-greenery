@@ -1,8 +1,8 @@
 import json
 import os
 
-from greenstreet.utils.selection import select_bbox, select_seg_model
-from greenstreet.utils.selection import select_green_model
+from greenstreet.utils.selection import select_bbox, get_segmentation_model
+from greenstreet.utils.selection import get_green_model
 from greenstreet.API import TileManager
 from greenstreet.utils.mapping import create_map, green_res_to_shp
 
@@ -13,8 +13,8 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
                 use_panorama=False, all_years=False):
 
     bbox = select_bbox(bbox_str)
-    seg_kwargs = select_seg_model(model)
-    green_kwargs = select_green_model(greenery_measure)
+    seg_kwargs = get_segmentation_model(model)
+    green_kwargs = get_green_model(greenery_measure)  #  TODO: Fix
     cubic_pictures = not use_panorama
 
     krige_n_job = n_job

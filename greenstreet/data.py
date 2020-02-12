@@ -1,6 +1,3 @@
-from greenstreet.API.base.panorama import BasePanorama
-
-
 class GreenData():
     def __init__(self):
         self.values = []
