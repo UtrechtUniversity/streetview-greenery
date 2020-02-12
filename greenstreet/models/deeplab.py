@@ -74,9 +74,10 @@ class DeepLabModel(object):
         self.load_segmentation_scheme()
         self.model_name = model_name
 
-    def id(self):
+    @property
+    def name(self):
         """ Returns an identifier for the model. """
-        return "deeplab_"+self.model_name
+        return "deeplab-" + self.model_name
 
     def load(self, model_name):
         """ Extract frozen graph from tar archive. """

@@ -8,15 +8,15 @@ import numpy as np
 from urllib.error import HTTPError
 
 from greenstreet.models import DeepLabModel
-from greenstreet.greenery import ClassPercentage
 from greenstreet.data import GreenData
+from greenstreet.greenery.greenery import GreeneryUnweighted
 
 
 class BasePanoramaManager(ABC):
     "Base class for managing a data set of panoramas."
 
     def __init__(self, data_dir, seg_model=DeepLabModel(),
-                 green_model=ClassPercentage(), n_sample=10):
+                 green_model=GreeneryUnweighted(), n_sample=10):
         self.meta_data = None
         self.panoramas = []
         self.data_dir = data_dir

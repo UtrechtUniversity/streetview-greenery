@@ -28,7 +28,7 @@ class AdamPanoramaJob(GreenJob):
 
     def _segmentation(self, model, data_dir):
         panorama_fp = os.path.join(data_dir, "pictures", "adam-panorama.jpg")
-        return model.run(panorama_fp)
+        return {"panorama": model.run(panorama_fp)}
 
     def _greenery(self, seg_res, green_model):
-        return green_model.transform(seg_res)
+        return green_model.transform(seg_res["panorama"])

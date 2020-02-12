@@ -1,66 +1,86 @@
 '''
 Models to compute a greenery measure from segmentation data.
 '''
+from abc import abstractmethod, ABC
+from math import pi
+
 import numpy as np
 
 
-def compute_total_frac(matrix_shape):
-    idx = np.indices(matrix_shape)
-    xval = idx[1].reshape(-1)
-    yval = idx[0].reshape(-1)
+class BaseGreenery(ABC):
+    name = "base"
 
-    dx = 2*xval/matrix_shape[1] - 1
-    dy = 2*yval/matrix_shape[0] - 1
+    def transform(self, seg_res):
+        return self.green_fractions(
+            seg_res["seg_map"], seg_res["color_map"][0])
 
-    fac = (dx**2+dy**2+1)**-1.5
-
-    return np.sum(fac)
-
-
-def compute_weights(matrix_shape):
-    idx = np.indices(matrix_shape)
-    xval = idx[1].reshape(-1)
-    yval = idx[0].reshape(-1)
-
-    dx = 2*xval/matrix_shape[1] - 1
-    dy = 2*yval/matrix_shape[0] - 1
-
-    fac = (dx**2+dy**2+1)**-1.5
-
-    return fac
+    @abstractmethod
+    def green_fractions(self, seg_map, names):
+        raise NotImplementedError
 
 
-class ClassPercentage(object):
+class GreeneryWeighted(BaseGreenery):
     "Greenery as the percentage of the pixels from the vegetation class."
-    def __init__(self, myclass="vegetation"):
-        self.myclass = myclass
-        self._id = f"class_percentage"
-        self.tot_frac = {}
-        self.weights = {}
+    name = "weighted"
 
-    def test(self, seg_results):
-        try:
-            return seg_results[self.myclass]
-        except KeyError:
-            return 0.0
+    def __init__(self):
+        self.partition_sum = {}
+        self.weights_store = {}
 
-    def seg_fractions(self, seg_map, names):
+    def green_fractions(self, seg_map, names):
         shape = seg_map.shape
-        if str(shape) not in self.weights:
-            self.weights[str(shape)] = compute_weights(shape)
+        if str(shape) not in self.weights_store:
+            self.weights_store[str(shape)] = self.weights(shape)
 
-        if self.tot_frac is None or str(shape) not in self.tot_frac:
-            self.tot_frac[str(shape)] = compute_total_frac(shape)
+        if str(shape) not in self.partition_sum:
+            partition_sum = np.sum(self.weights_store[str(shape)])
+            self.partition_sum[str(shape)] = partition_sum
 
-        weights = self.weights[str(shape)]
-        tot_frac = self.tot_frac[str(shape)]
+        weights = self.weights_store[str(shape)]
+        tot_frac = self.partition_sum[str(shape)]
 
         counts = np.bincount(seg_map.reshape(-1), weights=weights)
         return dict(zip(names, counts/tot_frac))
 
-    def id(self, one_class=False):
-        " Identification of the measure. "
-        if one_class:
-            return self.myclass
-        else:
-            return self._id
+    @abstractmethod
+    def weights(self, matrix_shape):
+        raise NotImplementedError
+
+
+class CubicWeighted(GreeneryWeighted):
+    name = "cubic-weighted"
+
+    def weights(self, matrix_shape):
+        idx = np.indices(matrix_shape)
+        xval = idx[1].reshape(-1)
+        yval = idx[0].reshape(-1)
+
+        dx = 2*xval/matrix_shape[1] - 1
+        dy = 2*yval/matrix_shape[0] - 1
+
+        fac = (dx**2+dy**2+1)**-1.5
+
+        return fac
+
+
+class PanoramaWeighted(GreeneryWeighted):
+    "Greenery as the percentage of the pixels from the vegetation class."
+    name = "panorama-weighted"
+
+    def weights(self, matrix_shape):
+        idx = np.indices(matrix_shape)
+        yval = idx[0].reshape(-1)
+
+        dy = (0.5 + yval)/matrix_shape[0]
+        fac = np.sin(dy*pi)
+        return fac
+
+
+class GreeneryUnweighted(BaseGreenery):
+    name = "unweighted"
+
+    def green_fractions(self, seg_map, names):
+        tot_frac = seg_map.shape[0] * seg_map.shape[1]
+
+        counts = np.bincount(seg_map.reshape(-1))
+        return dict(zip(names, counts/tot_frac))

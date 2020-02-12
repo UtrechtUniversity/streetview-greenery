@@ -1,5 +1,5 @@
 import os
-from abc import ABC, abstractmethod
+from abc import ABC
 from os.path import join, isfile
 import json
 from json.decoder import JSONDecodeError
@@ -36,14 +36,15 @@ class GreenJob(ABC):
             return STATUS_OK
 
         if self.seg_model is None:
-            return STATUS_FAIL
+            return STATUS_FAIL, "No valid segmentation model supplied."
 
         try:
-            seg_res = self._segmentation(data_dir)
+            seg_res = self._segmentation(self.seg_model, data_dir)
         except FileNotFoundError:
-            return STATUS_FAIL
+            return STATUS_FAIL, "Panorama(s) not found."
 
-        save_segmentation(seg_res, seg_fp)
+        save_segmentation(seg_res, seg_fp, panorama_type=self.name,
+                          segmentation_model=self.seg_model.name)
         return STATUS_OK
 
     def greenery(self, data_dir):
@@ -57,11 +58,17 @@ class GreenJob(ABC):
             return STATUS_FAIL
 
         try:
-            seg_res = load_segmentation(seg_fp)
+            seg_res, pano_type, seg_model = load_segmentation(seg_fp)
+            if pano_type != self.name:
+                return STATUS_FAIL, "Panorama type that was loaded is wrong."
+            if seg_model != self.seg_model.name:
+                return STATUS_FAIL, "Wrong segmentation type that was loaded."
         except FileNotFoundError:
-            return STATUS_FAIL
+            return STATUS_FAIL, f"Segmentation file {seg_fp} does not exist."
 
-        self._greenery(seg_res, self.green_model)
+        green_res = self._greenery(seg_res, self.green_model)
+        with open(green_fp, "w") as fp:
+            json.dump(green_res, fp, indent=4)
         return STATUS_OK
 
     def segmentation_file(self, data_dir):
@@ -74,7 +81,8 @@ class GreenJob(ABC):
         green_dir = join(data_dir, "greenery")
         os.makedirs(green_dir, exist_ok=True)
         return join(green_dir, self.name + "_" +
-                    self.seg_model.name + ".json")
+                    self.seg_model.name + "_" + self.green_model.name
+                    + ".json")
 
     def execute(self, data_dir, *args, program="download", **kwargs):
         if program == "download":
@@ -83,29 +91,24 @@ class GreenJob(ABC):
             return self.segmentation(data_dir, *args, **kwargs)
         if program == "greenery":
             return self.greenery(data_dir, *args, **kwargs)
-        return STATUS_FAIL
+        return STATUS_FAIL, f"program '{program}' unknown."
 
 
-def save_segmentation(seg_res, segment_fp):
-    zipped_seg_res = {}
-    for seg_id in seg_res:
-        zipped_seg_res[seg_id] = {}
-        for name in seg_res[seg_id]:
-            zsr = dict_to_b64(seg_res[seg_id][name])
-            zipped_seg_res[seg_id][name] = zsr
+def save_segmentation(seg_res, segment_fp, panorama_type, segmentation_model):
+    zipped_seg_res = {"seg_res": {}}
+    for image_name, image_seg in seg_res.items():
+        zipped_seg_res["seg_res"][image_name] = dict_to_b64(image_seg)
 
+    zipped_seg_res["panorama_type"] = panorama_type
+    zipped_seg_res["segmentation_model"] = segmentation_model
     with open(segment_fp, "w") as f:
         json.dump(zipped_seg_res, f)
 
 
 def unzip_segmentation(zipped_segmentation):
     segmentation = {}
-    for seg_id in zipped_segmentation:
-        segmentation[seg_id] = {}
-        for name in zipped_segmentation[seg_id]:
-            zsr = zipped_segmentation[seg_id][name]
-            usr = b64_to_dict(zsr)
-            segmentation[seg_id][name] = usr
+    for image_name, zsr in zipped_segmentation.items():
+        segmentation[image_name] = b64_to_dict(zsr)
     return segmentation
 
 
@@ -113,8 +116,10 @@ def load_segmentation(segment_fp):
     seg_res = {}
     try:
         with open(segment_fp, "r") as f:
-            zipped_segmentation = json.load(f)
-            seg_res = unzip_segmentation(zipped_segmentation)
+            segmentation = json.load(f)
+        seg_res = unzip_segmentation(segmentation["seg_res"])
+        panorama_type = segmentation["panorama_type"]
+        segmentation_model = segmentation["segmentation_model"]
     except FileNotFoundError:
         pass
-    return seg_res
+    return seg_res, panorama_type, segmentation_model

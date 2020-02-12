@@ -2,13 +2,16 @@
 import sys
 
 from greenstreet.models import DeepLabModel
-from greenstreet.greenery import ClassPercentage
+from greenstreet.greenery.greenery import GreeneryUnweighted, CubicWeighted,\
+    PanoramaWeighted
+from greenstreet.API.adam.panorama_job import AdamPanoramaJob
+from greenstreet.API.adam.cubic_job import AdamCubicJob
 
 
 def select_area(area, seg_model="mobilenet"):
     manager_kwargs = {
         'seg_model': DeepLabModel,
-        'green_model': ClassPercentage,
+        'green_model': GreeneryUnweighted,
         'data_id': area,
         'seg_kwargs': {"model_name": seg_model}
     }
@@ -73,26 +76,29 @@ def select_bbox(area="amsterdam"):
     return bbox
 
 
-def select_seg_model(model_str="deeplab-mobilenet"):
-    manager_kwargs = {}
-    model_sub = model_str.split('-')
+def get_segmentation_model(model_type="deeplab-mobilenet", **kwargs):
+    model_sub = model_type.split('-')
     if model_sub[0] == "deeplab":
-        manager_kwargs['seg_model'] = DeepLabModel
+        model_class = DeepLabModel
     else:
-        print(f"Unknown model: {model_sub[0]}/{model_str}")
-        sys.exit(124)
+        raise ValueError(f"Unknown model: {model_sub[0]}/{model_type}")
 
+    extra_kwargs = {}
     if len(model_sub) > 1:
-        manager_kwargs['seg_kwargs'] = {'model_name': model_sub[1]}
+        extra_kwargs = {'model_name': model_sub[1]}
 
-    return manager_kwargs
+    return model_class(**kwargs, **extra_kwargs)
 
 
-def select_green_model(myclass="vegetation"):
-    manager_kwargs = {
-        'green_model': ClassPercentage,
-        'green_kwargs': {
-            "myclass": myclass
-        }
-    }
-    return manager_kwargs
+def get_green_model(use_panorama=True, weighted_panorama=True):
+    if not weighted_panorama:
+        return GreeneryUnweighted()
+    if use_panorama:
+        return PanoramaWeighted()
+    return CubicWeighted()
+
+
+def get_job_runner(use_panorama, seg_model, green_model):
+    if use_panorama:
+        return AdamPanoramaJob(seg_model, green_model)
+    return AdamCubicJob(seg_model, green_model)

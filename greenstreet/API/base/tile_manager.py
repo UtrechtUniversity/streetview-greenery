@@ -2,7 +2,6 @@ import os
 import json
 from math import cos, pi, ceil, floor
 from json.decoder import JSONDecodeError
-import time
 
 from tqdm import tqdm
 import numpy as np
@@ -12,22 +11,21 @@ from greenstreet.greenery.visualization import _alpha_from_coordinates
 from greenstreet.greenery.visualization import _semivariance
 from greenstreet.utils.mapping import MapImageOverlay
 from greenstreet.utils import _empty_green_res, _extend_green_res
-from greenstreet.API.idgen import get_green_key
-from greenstreet.utils.selection import select_bbox
+from greenstreet.utils.selection import select_bbox, get_segmentation_model,\
+    get_green_model, get_job_runner
 from greenstreet.sqlock import SQLiteLock
-from greenstreet.data import GreenData
 from greenstreet.query import GridQuery
 from greenstreet.meta import AdamMetaData
-from greenstreet.API.adam.job import AdamPanoramaJob
 from os.path import isfile
 
 
 class TileManager(object):
     def __init__(self, data_dir, bbox_str="amsterdam",
                  grid_level=0, tile_resolution=1024,
-                 model='deeplab-mobilenet',
+                 seg_model_name='deeplab-mobilenet',
                  green_measure='vegetation',
                  all_years=False, use_panorama=False,
+                 weighted_panorama=True,
                  data_source="adam", ):
 
         self.data_dir = data_dir
@@ -41,34 +39,34 @@ class TileManager(object):
         self.empty_files = load_empty_list(self.empty_fp, self.lock_fp)
 
         self.grid_level = grid_level
-        self.model = model
         self.all_years = all_years
         self.use_panorama = use_panorama
         self.data_source = data_source
         self.green_measure = green_measure
         self.green_mat = None
         self.all_green_res = None
-        self.map_key = get_green_key(
-            data_source=data_source,
-            green_measure=green_measure,
-            seg_model=model,
+
+        self.seg_model = get_segmentation_model(seg_model_name)
+        self.green_model = get_green_model(use_panorama, weighted_panorama)
+        self.job_runner = get_job_runner(
             use_panorama=use_panorama,
-            grid_level=grid_level,
-            all_years=all_years)
+            seg_model=self.seg_model,
+            green_model=self.green_model)
+
+#         self.map_key = get_green_key(
+#             data_source=data_source,
+#             green_measure=green_measure,
+#             seg_model=model,
+#             use_panorama=use_panorama,
+#             grid_level=grid_level,
+#             all_years=all_years)
         self.initialize_tiles()
         self.pano_ids = None
 
     def initialize_tiles(self):
-#         from greenstreet.API.adam.tile import AdamTile
-
         for tile_data in self.tile_list.reshape(-1):
-#             data_dir = os.path.join(self.data_dir, tile_data["name"])
             tile_data["query"] = GridQuery(
                 bbox=tile_data["bbox"], grid_level=self.grid_level)
-#             tile_data["tile"] = AdamTile(
-#                 data_dir=data_dir, bbox=tile_data["bbox"],
-#                 grid_level=self.grid_level, all_years=self.all_years
-#             )
 
     def get_meta_data(self):
         for tile_data in self.tile_list.reshape(-1):
@@ -120,7 +118,6 @@ class TileManager(object):
             }
             for pano_id, tile_data in pano_ids.items()
         ]
-        job_runner = AdamPanoramaJob()
         for job in jobs:
             meta_fp = os.path.join(job["data_dir"], "meta.json")
             pano_id = job.pop("pano_id")
@@ -129,25 +126,33 @@ class TileManager(object):
                 tile_data = pano_ids[pano_id]
                 tile_data["meta"].to_file(meta_fp, pano_id=pano_id)
 
-            result = job_runner.execute(**job)
+            result = self.job_runner.execute(**job)
+
+    def segmentation(self):
+        pano_ids = self.query()
+        jobs = [
+            {
+                "data_dir": _data_dir(self.tiles_dir, tile_data["name"], pano_id),
+                "program": "segmentation",
+            }
+            for pano_id, tile_data in pano_ids.items()
+        ]
+        for job in jobs:
+            result = self.job_runner.execute(**job)
+
+    def greenery(self):
+        pano_ids = self.query()
+
+        jobs = [
+            {
+                "data_dir": _data_dir(self.tiles_dir, tile_data["name"], pano_id),
+                "program": "greenery",
+            }
+            for pano_id, tile_data in pano_ids.items()
+        ]
+        for job in jobs:
+            result = self.job_runner.execute(**job)
             print(result)
-
-    def greenery(self, compute=False, update=False):
-        all_green_res = GreenData()
-
-        self.green_mat = [[] for _ in range(self.n_tiles_y)]
-        for iy in range(len(self.green_mat)):
-            self.green_mat[iy] = [{} for _ in range(self.n_tiles_x)]
-
-        for tile_data in tqdm(self.tile_list.reshape(-1)):
-            tile = tile_data["tile"]
-            tile_name = tile_data["name"]
-            new_green_res = tile.greenery(compute=compute, update=update)
-            if tile.is_empty():
-                update_empty_list(self.empty_fp, self.lock_file, tile_name)
-            all_green_res.extend(new_green_res)
-            tile_data["green_res"] = new_green_res
-        return all_green_res
 
     def krige_map(self, window_range=1, overlay_name="greenery", upscale=2,
                   n_job=1, job_id=0, **kwargs):
@@ -240,25 +245,6 @@ class TileManager(object):
                                   min_green=0.0, max_green=1.0,
                                   cmap="RdYlGn")
         return overlay, self.map_key
-
-    def get(self, **kwargs):
-        print("Obtaining meta data..")
-        for tile in tqdm(self.tile_list):
-            tile.get(**kwargs)
-            if len(tile.meta_data) == 0:
-                self.empty_tiles[tile.tile_name] = True
-        with open(self.empty_fp, "w") as f:
-            json.dump(self.empty_tiles, f, indent=2)
-
-    def load(self, **kwargs):
-        for tile in self.tile_list:
-            if tile.tile_name not in self.empty_tiles:
-                tile.load(**kwargs)
-
-    def seg_analysis(self, **kwargs):
-        for tile in self.tile_list:
-            if tile.tile_name not in self.empty_tiles:
-                tile.seg_analysis(**kwargs)
 
     def green_analysis(self, **kwargs):
         green_res = {
