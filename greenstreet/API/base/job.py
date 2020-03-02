@@ -68,7 +68,12 @@ class GreenJob(ABC):
 
         green_res = self._greenery(seg_res, self.green_model)
         with open(green_fp, "w") as fp:
-            json.dump(green_res, fp, indent=4)
+            json.dump({
+                "greenery_fractions": green_res,
+                "segmentation_model": self.seg_model.name,
+                "greenery_model": self.green_model.name,
+                "panorama_type": self.name
+            }, fp, indent=4)
         return STATUS_OK
 
     def segmentation_file(self, data_dir):

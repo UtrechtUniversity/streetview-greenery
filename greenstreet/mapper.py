@@ -14,7 +14,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
 
     bbox = select_bbox(bbox_str)
     seg_kwargs = get_segmentation_model(model)
-    green_kwargs = get_green_model(greenery_measure)  #  TODO: Fix
+    green_kwargs = get_green_model(greenery_measure)  # TODO: Fix
     cubic_pictures = not use_panorama
 
     krige_n_job = n_job

@@ -2,6 +2,7 @@ import numpy as np
 
 from greenstreet.utils.sun import degree_to_meter
 from copy import deepcopy
+import json
 
 
 class GridQuery():
@@ -81,3 +82,22 @@ class GridQuery():
             load_ids.append(idx_min)
 
         return np.array(load_ids)
+
+    def to_file(self, query_fp, pano_ids):
+        with open(query_fp, "w") as f:
+            json.dump({
+                "query_type": self.name,
+                "pano_ids": pano_ids.tolist(),
+                "param": self.param,
+                "grid_level": self.grid_level,
+            }, f)
+
+    def pano_ids_from_file(self, query_fp):
+        with open(query_fp, "r") as f:
+            query = json.load(f)
+
+        return np.array(query["pano_ids"])
+
+    @property
+    def file_name(self):
+        return f"{self.name}_lvl_{self.grid_level}.json"

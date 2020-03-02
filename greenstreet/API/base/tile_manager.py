@@ -53,13 +53,6 @@ class TileManager(object):
             seg_model=self.seg_model,
             green_model=self.green_model)
 
-#         self.map_key = get_green_key(
-#             data_source=data_source,
-#             green_measure=green_measure,
-#             seg_model=model,
-#             use_panorama=use_panorama,
-#             grid_level=grid_level,
-#             all_years=all_years)
         self.initialize_tiles()
         self.pano_ids = None
 
@@ -68,28 +61,34 @@ class TileManager(object):
             tile_data["query"] = GridQuery(
                 bbox=tile_data["bbox"], grid_level=self.grid_level)
 
-    def get_meta_data(self):
-        for tile_data in self.tile_list.reshape(-1):
-            if "meta" in tile_data:
-                continue
-            param = tile_data["query"].param
-            meta_fp = os.path.join(self.tiles_dir, tile_data["name"],
-                                   "meta.json")
-            try:
-                tile_data["meta"] = AdamMetaData.from_file(meta_fp)
-            except FileNotFoundError:
-                tile_data["meta"] = AdamMetaData.from_download(param)
-                os.makedirs(os.path.dirname(meta_fp), exist_ok=True)
-                tile_data["meta"].to_file(meta_fp)
+    def get_meta_data(self, tile_data):
+        if "meta" in tile_data:
+            return
+        param = tile_data["query"].param
+        meta_fp = os.path.join(self.tiles_dir, tile_data["name"],
+                               "meta.json")
+        try:
+            tile_data["meta"] = AdamMetaData.from_file(meta_fp)
+        except FileNotFoundError:
+            tile_data["meta"] = AdamMetaData.from_download(param)
+            os.makedirs(os.path.dirname(meta_fp), exist_ok=True)
+            tile_data["meta"].to_file(meta_fp)
 
     def query(self):
         if self.pano_ids is not None:
             return self.pano_ids
         self.pano_ids = {}
-        self.get_meta_data()
         for tile_data in self.tile_list.reshape(-1):
-            pano_ids = tile_data["query"].sample_panoramas(tile_data["meta"])
-            self.pano_ids.update({pano_id: tile_data for pano_id in pano_ids})
+            query_dir = os.path.join(self.tiles_dir, tile_data["name"], "queries")
+            os.makedirs(query_dir, exist_ok=True)
+            query_fp = os.path.join(query_dir, tile_data["query"].file_name)
+            try:
+                new_pano_ids = tile_data["query"].pano_ids_from_file(query_fp)
+            except FileNotFoundError:
+                self.get_meta_data(tile_data)
+                new_pano_ids = tile_data["query"].sample_panoramas(tile_data["meta"])
+                tile_data["query"].to_file(query_fp, new_pano_ids)
+            self.pano_ids.update({pano_id: tile_data for pano_id in new_pano_ids})
         return self.pano_ids
 
     def meta_summary(self):
@@ -126,7 +125,7 @@ class TileManager(object):
                 tile_data = pano_ids[pano_id]
                 tile_data["meta"].to_file(meta_fp, pano_id=pano_id)
 
-            result = self.job_runner.execute(**job)
+            self.job_runner.execute(**job)
 
     def segmentation(self):
         pano_ids = self.query()
@@ -138,7 +137,7 @@ class TileManager(object):
             for pano_id, tile_data in pano_ids.items()
         ]
         for job in jobs:
-            result = self.job_runner.execute(**job)
+            self.job_runner.execute(**job)
 
     def greenery(self):
         pano_ids = self.query()
@@ -151,8 +150,7 @@ class TileManager(object):
             for pano_id, tile_data in pano_ids.items()
         ]
         for job in jobs:
-            result = self.job_runner.execute(**job)
-            print(result)
+            self.job_runner.execute(**job)
 
     def krige_map(self, window_range=1, overlay_name="greenery", upscale=2,
                   n_job=1, job_id=0, **kwargs):

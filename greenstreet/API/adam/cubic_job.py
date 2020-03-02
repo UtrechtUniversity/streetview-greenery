@@ -75,4 +75,4 @@ class AdamCubicJob(GreenJob):
         }
 
     def panorama_files(self):
-        return {side: f"adam-cubic-{side}.jpg" for side in self.sides}
+        return {side: f"adam-{side}.jpg" for side in self.sides}

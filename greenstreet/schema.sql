@@ -31,8 +31,10 @@ CREATE TABLE download (
 
 CREATE TABLE segment (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	pano_id INTEGER NOT NULL,
 	seg_type_id INTEGER NOT NULL,
 	pano_type_id INTEGER NOT NULL,
+	FOREIGN KEY (pano_id) REFERENCES panorama (id),
 	FOREIGN KEY (seg_type_id) REFERENCES segment_type (id),
 	FOREIGN KEY (pano_type_id) REFERENCES panorama_type (id)
 );
@@ -40,16 +42,19 @@ CREATE TABLE segment (
 CREATE TABLE greenery (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	pano_id INTEGER NOT NULL,
+	pano_type_id INTEGER NOT NULL,
 	seg_type_id INTEGER NOT NULL,
 	green_type_id INTEGER NOT NULL,
 	FOREIGN KEY (pano_id) REFERENCES panorama (id),
 	FOREIGN KEY (seg_type_id) REFERENCES segment_type (id),
-	FOREIGN KEY (green_type_id) REFERENCES green_type (id)
+	FOREIGN KEY (green_type_id) REFERENCES green_type (id),
+	FOREIGN KEY (pano_type_id) REFERENCES panorama_type (id)
 );
 
 CREATE TABLE queries (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	query CHAR NOT NULL UNIQUE,
+	grid_level INTEGER NOT NULL,
+	tile_id INTEGER NOT NULL,
 	pano_id INTEGER NOT NULL,
 	FOREIGN KEY (pano_id) REFERENCES panorama (id)
 );
@@ -83,7 +88,9 @@ CREATE TABLE green_class (
 CREATE TABLE result (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	value FLOAT NOT NULL,
+	green_class_id INTEGER NOT NULL,
 	green_id INTEGER NOT NULL,
-	FOREIGN KEY (green_id) REFERENCES greenery (id)
+	FOREIGN KEY (green_id) REFERENCES greenery (id),
+	FOREIGN KEY (green_class_id) REFERENCES green_class (id)
 );
 	
