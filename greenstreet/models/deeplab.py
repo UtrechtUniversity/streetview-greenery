@@ -194,7 +194,8 @@ def plot_segmentation(image_fp, seg_map, color_map, show=True,
         unique_labels = np.array(unique_labels)
     else:
         unique_labels = np.unique(seg_map)
-#     print(unique_labels)
+        label_names = label_names[unique_labels]
+    print(unique_labels)
     ax = plt.subplot(grid_spec[3])
     img_colors = np.reshape(label_colors[unique_labels], (-1, 1, 3))
     plt.imshow(img_colors.astype(np.uint8), interpolation='nearest')

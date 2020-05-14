@@ -117,13 +117,14 @@ class AdamMetaData():
             meta_dict = {
                 "name": self.name,
                 "param": self.param,
-                "timestamp": str(self.meta_timestamp),
+                "meta_timestamp": str(self.meta_timestamp),
                 "meta_data": self.meta_data
             }
         else:
             meta_dict = {
                 "name": self.name,
-                "timestamp": str(self.meta_timestamp),
+                "meta_timestamp": str(self.meta_timestamp),
+                "pano_timestamp": self.timestamps(pano_id),
                 "latitude": self.coordinates(pano_id)[1],
                 "longitude": self.coordinates(pano_id)[0],
                 "pano_id": pano_id,

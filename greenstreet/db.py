@@ -90,7 +90,7 @@ class GreenStreetDB():
             pano_name = meta_data["pano_id"]
             latitude = meta_data["latitude"]
             longitude = meta_data["longitude"]
-            timestamp = meta_data["timestamp"]
+            timestamp = meta_data["pano_timestamp"]
             try:
                 db.execute(
                     'INSERT INTO panorama (name, tile_id, latitude, longitude,'
@@ -131,15 +131,17 @@ class GreenStreetDB():
                 db.commit()
             except sqlite3.IntegrityError:
                 pass
-            pano_type_id = db.execute('SELECT id FROM panorama_type WHERE name is ?',
-                                      (pic_type,)).fetchone()['id']
+            pano_type_id = db.execute(
+                'SELECT id FROM panorama_type WHERE name is ?',
+                (pic_type,)).fetchone()['id']
             exist_id = db.execute('SELECT id FROM download WHERE pano_id is ? '
                                   'AND pano_type_id is ?',
                                   (pano_id, pano_type_id)).fetchone()
             if exist_id is not None:
                 continue
-            db.execute('INSERT INTO download (pano_id, pano_type_id, complete) VALUES'
-                       '(?, ?, ?) ', (pano_id, pano_type_id, complete))
+            db.execute(
+                'INSERT INTO download (pano_id, pano_type_id, complete) VALUES'
+                '(?, ?, ?) ', (pano_id, pano_type_id, complete))
             db.commit()
 
     def update_segmentation(self, seg_dir, pano_id, db):
@@ -161,8 +163,9 @@ class GreenStreetDB():
                                   ).fetchone()
             if exist_id is not None:
                 continue
-            db.execute('INSERT INTO segment (pano_id, pano_type_id, seg_type_id)'
-                       ' VALUES (?, ?, ?) ', (pano_id, pano_type_id, seg_type_id))
+            db.execute(
+                'INSERT INTO segment (pano_id, pano_type_id, seg_type_id)'
+                ' VALUES (?, ?, ?) ', (pano_id, pano_type_id, seg_type_id))
             db.commit()
 
     def update_greenery(self, green_dir, pano_id, db, green_class_ids):

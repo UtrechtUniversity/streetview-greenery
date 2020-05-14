@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from greenstreet.meta import AdamMetaData
+from greenstreet.API.adam.meta import AdamMetaData
 
 meta_data = AdamMetaData.from_download(
     param={"time_stamp_before": "2016-04-20",

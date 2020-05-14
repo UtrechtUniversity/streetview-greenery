@@ -24,11 +24,10 @@ def total_size(o, handlers={}, verbose=False):
                     OtherContainerClass: OtherContainerClass.get_elements}
 
     """
-    dict_handler = lambda d: chain.from_iterable(d.items())
     all_handlers = {tuple: iter,
                     list: iter,
                     deque: iter,
-                    dict: dict_handler,
+                    dict: lambda d: chain.from_iterable(d.items()),
                     set: iter,
                     frozenset: iter,
                     }
