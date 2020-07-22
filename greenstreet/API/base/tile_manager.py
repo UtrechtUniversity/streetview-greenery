@@ -3,13 +3,14 @@ import json
 from math import cos, pi, ceil, floor
 from json.decoder import JSONDecodeError
 from os.path import isfile, join
+from pathlib import Path
 
 from tqdm import tqdm
 import numpy as np
 
-from greenstreet.greenery.visualization import krige_greenery
+from greenstreet.greenery.kriging import krige_greenery
 from greenstreet.greenery.visualization import _alpha_from_coordinates
-from greenstreet.greenery.visualization import _semivariance
+# from greenstreet.greenery.visualization import _semivariance
 from greenstreet.utils.mapping import MapImageOverlay
 from greenstreet.utils import _empty_green_res, _extend_green_res
 from greenstreet.utils.selection import select_bbox, get_segmentation_model,\
@@ -20,6 +21,7 @@ from greenstreet.API.adam import AdamMetaData
 from greenstreet.db import get_db
 from greenstreet.greenery.measure import Measure, LinearMeasure
 from pprint import pprint
+from greenstreet.greenery.semivariogram import _semivariance
 
 
 class TileManager(object):
@@ -43,6 +45,7 @@ class TileManager(object):
         self.empty_fp = os.path.join(self.cache_dir, "empty_tiles.json")
         self.empty_files = load_empty_list(self.empty_fp, self.lock_fp)
 
+        self.measure = LinearMeasure(weights={"vegetation": 1})
         self.grid_level = grid_level
         self.all_years = all_years
         self.use_panorama = use_panorama
@@ -83,7 +86,7 @@ class TileManager(object):
         if self.pano_ids is not None:
             return self.pano_ids
         self.pano_ids = {}
-        for tile_data in self.tile_list.reshape(-1):
+        for tile_data in self.tile_list:
             query_dir = join(self.tiles_dir, tile_data["name"], "queries")
             os.makedirs(query_dir, exist_ok=True)
             query_fp = join(query_dir, tile_data["query"].file_name)
@@ -94,43 +97,37 @@ class TileManager(object):
                 new_pano_ids = tile_data["query"].sample_panoramas(
                     tile_data["meta"])
                 tile_data["query"].to_file(query_fp, new_pano_ids)
-            self.pano_ids.update(
-                {pano_id: tile_data for pano_id in new_pano_ids})
-        return self.pano_ids
 
-    def meta_summary(self):
-        total_pictures = 0
-        avail_pictures = 0
-        for tile_data in self.tile_list.reshape(-1):
-            tile = tile_data["tile"]
-            tile.get_meta_data()
-            summary = tile.summmary()
-            total_pictures += summary["n_pictures"]
-            avail_pictures += summary["n_downloaded"]
-            print(f"[{tile_data['global_id_x']}, {tile_data['global_id_y']}]: "
-                  f"{summary['n_downloaded']}/{summary['n_pictures']} pictures"
-                  f", last modified on: {summary['time_modified']}")
-        print("--------------------------------------------------")
-        print(f"{len(self.tile_list.reshape(-1))} tiles,"
-              f" {avail_pictures}/{total_pictures} pictures")
+            self.pano_ids.update(
+                {pano_id: tile_data["i_tile"]
+                 for pano_id in new_pano_ids})
+        return self.pano_ids
 
     def download(self):
         pano_ids = self.query()
+#         print(pano_ids)
+#         for pano_id, i_tile in pano_ids.items():
+#             print(pano_id, i_tile, self.tile_list[i_tile])
         jobs = [
             {
                 "data_dir": _data_dir(
-                    self.tiles_dir, tile_data["name"], pano_id),
+                    self.tiles_dir, self.tile_list[i_tile]["name"],
+                    pano_id),
                 "program": "download",
                 "pano_id": pano_id,
             }
-            for pano_id, tile_data in pano_ids.items()
+            for pano_id, i_tile in pano_ids.items()
         ]
         for job in jobs:
             meta_fp = os.path.join(job["data_dir"], "meta.json")
             pano_id = job.pop("pano_id")
 
+#             print(meta_fp)
             if not isfile(meta_fp):
-                tile_data = pano_ids[pano_id]
+                os.makedirs(job["data_dir"], exist_ok=True)
+#                 print(pano_ids)
+                tile_id = pano_ids[pano_id]
+                tile_data = self.tile_list[tile_id]
                 self.get_meta_data(tile_data)
                 tile_data["meta"].to_file(meta_fp, pano_id=pano_id)
 
@@ -141,10 +138,10 @@ class TileManager(object):
         jobs = [
             {
                 "data_dir": _data_dir(
-                    self.tiles_dir, tile_data["name"], pano_id),
+                    self.tiles_dir, self.tile_list[i_tile]["name"], pano_id),
                 "program": "segmentation",
             }
-            for pano_id, tile_data in pano_ids.items()
+            for pano_id, i_tile in pano_ids.items()
         ]
         for job in jobs:
             self.job_runner.execute(**job)
@@ -155,16 +152,16 @@ class TileManager(object):
         jobs = [
             {
                 "data_dir": _data_dir(
-                    self.tiles_dir, tile_data["name"], pano_id),
+                    self.tiles_dir, self.tile_list[i_tile]["name"], pano_id),
                 "program": "greenery",
             }
-            for pano_id, tile_data in pano_ids.items()
+            for pano_id, i_tile in pano_ids.items()
         ]
         for job in jobs:
             self.job_runner.execute(**job)
 
-    def compute_krige(self, measure=LinearMeasure(weights={"vegetation": 1}),
-                      window_range=1, upscale=2):
+    def compute_krige(self, var_param, result_dict, krige_dir, window_range=1,
+                      upscale=2):
         n_tiles_x = max([tile["local_id_x"] for tile in self.tile_list]) + 1
         n_tiles_y = max([tile["local_id_y"] for tile in self.tile_list]) + 1
         tile_mat = self.tile_list.reshape((n_tiles_y, n_tiles_x))
@@ -172,17 +169,54 @@ class TileManager(object):
                                   self.tiles_dir,
                                   self.db_fp,
                                   window_range=window_range)
-        pprint(jobs)
+
+        measures_per_tl = 2**self.grid_level
+        dots_per_tile = max(10, upscale*measures_per_tl)
+        os.makedirs(krige_dir, exist_ok=True)
+        for job in jobs:
+            krige = krige_greenery(result_dict, job["neighbors"], job["tile"],
+                                   init_kwargs=var_param,
+                                   dots_per_tile=dots_per_tile)
+            krige_result = {
+                "data": krige.tolist(),
+                "bbox": job["tile"]["bbox"],
+                "tile_name": job["tile"]["name"]
+            }
+            krige_fp = Path(krige_dir, f"{job['tile']['name']}.json")
+            with open(krige_fp, "w") as f:
+                json.dump(krige_result, f)
+
+    def compute_semivariance(self):
         db = get_db(self.db_fp)
         tile_names = [tile["name"] for tile in self.tile_list]
         pano_ids = get_tile_results(db, tile_names, self.grid_level)
-#         print(get_tile_ids(db, tile_names))
-#         pano_ids = get_tile_results(db, tile_names, grid_level)
         green_ids = get_green_ids(db, pano_ids, self.job_runner.name,
                                   self.job_runner.seg_model.name,
                                   self.job_runner.green_model.name)
-        result_dict = result_from_green_ids(db, green_ids, measure)
-        print(result_dict)
+        model_name = self.seg_model.name + "_" + self.green_model.name
+        if self.use_panorama:
+            base_name = "panorama"
+        else:
+            base_name = "cubic"
+        if self.all_years:
+            base_name += "_yearly"
+
+        base_name += f"lvl{self.grid_level}"
+        measure_name = self.measure.name
+        krige_dir = Path(self.krige_dir, base_name, model_name, measure_name)
+        os.makedirs(krige_dir, exist_ok=True)
+        variogram_fp = Path(krige_dir, "variogram.json")
+
+        result_dict = result_from_green_ids(db, green_ids, self.measure)
+
+        n_local_x = max([x["local_id_x"] for x in self.tile_list])+1
+        n_local_y = max([x["local_id_y"] for x in self.tile_list])+1
+
+        tile_matrix = self.tile_list.reshape((n_local_x, n_local_y))
+        semi_param = _semivariance(tile_matrix, result_dict, plot=False)
+        with open(variogram_fp, "w") as f:
+            json.dump(semi_param, f)
+        return semi_param, result_dict, krige_dir
 
     def green_analysis(self, **kwargs):
         green_res = {
@@ -221,6 +255,7 @@ def compute_krige_jobs(tile_mat, krige_dir, tiles_dir, db_fp,
                         continue
                     neighbors.append(tile_mat[niy][nix]["name"])
             jobs.append({"tile_name": tile_mat[iy][ix]["name"],
+                         "tile": tile_mat[iy][ix],
                          "neighbors": neighbors,
                          "krige_dir": krige_dir,
                          "tiles_dir": tiles_dir,
@@ -292,21 +327,13 @@ def result_from_green_ids(db, green_ids, measure):
             results[green_id] = {}
         results[green_id][green_class] = value
 
-    measure_res = {green_ids[green_id]: measure.compute(val)
+#     pprint(results)
+    measure_res = {green_id: measure.compute(val)
                    for green_id, val in results.items()}
 
-#     print(list(measure_res))
-    extras = db.execute(
-        "SELECT id, pano_id "
-        "FROM greenery "
-        "WHERE id IN ({green_list})".format(
-            green_list=",".join(['?']*len(measure_res))
-        ),
-        list(measure_res)
-    ).fetchall()
-#     print(dict(extras[0]))
-    green_2_pano = {x["id"]: x["pano_id"] for x in extras}
-    pano_2_green = {v: k for k, v in green_2_pano.items()}
+#     pprint(measure_res)
+
+    pano_2_green = {v: k for k, v in green_ids.items()}
 
     pano_res = db.execute(
         "SELECT panorama.id, panorama.name, tile.name AS tile_name, "
@@ -314,11 +341,11 @@ def result_from_green_ids(db, green_ids, measure):
         "FROM panorama JOIN tile "
         "ON panorama.tile_id = tile.id "
         "WHERE panorama.id IN ({id_list})".format(
-            id_list=",".join(['?']*len(green_2_pano))
+            id_list=",".join(['?']*len(green_ids))
         ),
-        list(green_2_pano.values())
+        list(green_ids.values())
     ).fetchall()
-#     print(dict(pano_res[0]))
+
     pano_res = {r["id"]: {
                     "panorama_name": r["name"],
                     "tile_name": r["tile_name"],
@@ -327,6 +354,7 @@ def result_from_green_ids(db, green_ids, measure):
                 }
                 for r in pano_res}
 
+#     pprint(pano_res)
     res_by_tile = {}
 
     for pano_id, props in pano_res.items():
@@ -345,12 +373,7 @@ def result_from_green_ids(db, green_ids, measure):
         res_by_tile[tile_name]["greenery"].append(greenery)
 
     return res_by_tile
-#     print(pano_res)
-#     print(res_by_tile)
-#     print(green_2_pano)
-#     print(results)
-#     for green_id in green_ids:
-        
+
 
 def compute_tiles(bbox, tile_resolution):
     NL_bbox = [
@@ -397,6 +420,7 @@ def compute_tiles(bbox, tile_resolution):
         name = f"NL_tile_{tile_resolution}m_{global_y}_{global_x}"
 
         tile = tile_list[i_tile]
+        tile["i_tile"] = i_tile
         tile["global_id_x"] = global_x
         tile["global_id_y"] = global_y
         tile["local_id_x"] = local_x

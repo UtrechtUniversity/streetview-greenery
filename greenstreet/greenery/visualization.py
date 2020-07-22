@@ -7,12 +7,8 @@ from math import sqrt, pi, cos
 from matplotlib import pyplot as plt
 import numpy as np
 from pykrige import OrdinaryKriging
-from pykrige.core import _calculate_variogram_model
-from pykrige.variogram_models import spherical_variogram_model
-from pykrige.variogram_models import exponential_variogram_model
 from scipy.interpolate import griddata
 from scipy.spatial.distance import pdist
-from tqdm import tqdm
 
 from greenstreet.utils.mapping import MapImageOverlay
 
@@ -206,74 +202,6 @@ def _compute_dist(ix, iy, i_green_res, jx, jy, j_green_res):
         max_sample = i_green.shape[0]*j_green.shape[0]
         n_sample = min(max(10000, n_sample), max_sample)
         return _sample_dist(i_coor, i_green, j_coor, j_green, n_sample)
-
-
-def _semivariance(green_matrix, nlags=None, variogram_model="exponential",
-                  plot=False):
-    all_d = []
-    all_g = []
-    pbar = tqdm(total=(len(green_matrix)*len(green_matrix[0]))**2)
-    for iy, i_green_row in enumerate(green_matrix):
-        for ix, i_green_res in enumerate(i_green_row):
-            for jy, j_green_row in enumerate(green_matrix):
-                for jx, j_green_res in enumerate(j_green_row):
-                    pbar.update()
-                    dt, gt = _compute_dist(
-                        ix, iy, i_green_res, jx, jy, j_green_res)
-                    all_d.append(dt)
-                    all_g.append(gt)
-
-    all_d = np.concatenate(all_d)
-    all_g = np.concatenate(all_g)
-    pbar.close()
-    sort_idx = np.argsort(all_d)
-    d = all_d[sort_idx]
-    g = all_g[sort_idx]
-    if nlags is None:
-        nlags = max(6, min(round(len(d)/10), 200))
-    lags = np.zeros(nlags)
-    semivariance = np.zeros(nlags)
-
-    for i in range(nlags):
-        jm = int(i*d.shape[0]/nlags)
-        jp = min(int((i+1)*d.shape[0]/nlags), d.shape[0])
-        lags[i] = np.mean(d[jm:jp])
-        semivariance[i] = np.mean(g[jm:jp])
-
-    lags = lags[~np.isnan(semivariance)]
-    semivariance = semivariance[~np.isnan(semivariance)]
-
-    if variogram_model == "exponential":
-        var_fn = exponential_variogram_model
-    elif variogram_model == "spherical":
-        var_fn = spherical_variogram_model
-#     print(nlags, all_d, green_matrix)
-#     print(lags)
-#     print(semivariance)
-    param = _calculate_variogram_model(
-        lags, semivariance, variogram_model,
-        var_fn, False)
-
-    if plot:
-        lags_zero = np.append(0, lags)
-        plt.plot(lags, semivariance)
-        plt.plot(lags_zero, var_fn(param, lags_zero))
-        plt.legend(["data", "variogram model (fit)"])
-        plt.xlabel("Distance (m)")
-        plt.ylabel("Semivariance")
-        plt.ylim([0, 1.1*semivariance.max()])
-        plt.xlim([0, lags.max()])
-        print(param)
-        plt.show()
-
-    param[2] = max(1e-5, param[2])
-    param[0] += param[2]
-
-    krige_kwargs = {
-        "variogram_model": variogram_model,
-        "variogram_parameters": param.tolist(),
-    }
-    return krige_kwargs
 
 
 def _alpha_from_coordinates(green_res, lat_grid, long_grid, min_dist=1,

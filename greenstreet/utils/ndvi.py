@@ -36,6 +36,7 @@ def tiff_to_overlay(tiff_fp, name=None, min_green=-0.03, max_green=None):
     lat_grid = np.flip(np.linspace(uly, lry, warped_ds.RasterYSize))
     long_grid = np.linspace(ulx, lrx, warped_ds.RasterXSize)
 
+    print(lat_grid, long_grid)
 #     min_green = warped_array[np.where(warped_array > -1)].min()
     if max_green is None:
         max_green = warped_array.max()+0.05

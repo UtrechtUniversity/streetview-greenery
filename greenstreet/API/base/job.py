@@ -119,12 +119,9 @@ def unzip_segmentation(zipped_segmentation):
 
 def load_segmentation(segment_fp):
     seg_res = {}
-    try:
-        with open(segment_fp, "r") as f:
-            segmentation = json.load(f)
-        seg_res = unzip_segmentation(segmentation["seg_res"])
-        panorama_type = segmentation["panorama_type"]
-        segmentation_model = segmentation["segmentation_model"]
-    except FileNotFoundError:
-        pass
+    with open(segment_fp, "r") as f:
+        segmentation = json.load(f)
+    seg_res = unzip_segmentation(segmentation["seg_res"])
+    panorama_type = segmentation["panorama_type"]
+    segmentation_model = segmentation["segmentation_model"]
     return seg_res, panorama_type, segmentation_model

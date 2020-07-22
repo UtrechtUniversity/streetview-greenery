@@ -8,9 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from tqdm import tqdm
-# import gdal
-# import osr
-# import osgeo.ogr as ogr
 
 
 class MapImageOverlay:

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# TODO: Fix desctructive negation / addition.
+# TODO: Fix destructive negation / addition.
 
 
 class LinearMeasure():
@@ -14,6 +14,12 @@ class LinearMeasure():
         for green_class, slope in self.weights.items():
             measure += green_res[green_class]*slope
         return measure
+
+    @property
+    def name(self):
+        weights_str = [f"{green_class}{slope}"
+                       for green_class, slope in self.weights.items()]
+        return "_".join(weights_str + [str(self.intercept)])
 
     @property
     def classes(self):
