@@ -6,7 +6,6 @@ import json
 
 
 class GridQuery():
-    name = "grid"
 
     def __init__(self, bbox, grid_level=0):
         self.bbox = deepcopy(bbox)
@@ -16,6 +15,7 @@ class GridQuery():
         if self.bbox[0][1] > self.bbox[1][1]:
             self.bbox[1][1], self.bbox[0][1] = self.bbox[0][1], self.bbox[1][1]
         self.grid_level = grid_level
+        self.name = f"grid_{grid_level}"
 
     @property
     def param(self):

@@ -9,7 +9,7 @@ from greenstreet.API.base.job import GreenJob
 
 
 class AdamCubicJob(GreenJob):
-    name = "adam-cubic"
+    pic_type = "adam-cubic"
     sides = {
         "front": "f",
         "back": "b",
@@ -27,7 +27,7 @@ class AdamCubicJob(GreenJob):
         }
 
         if all(os.path.exists(pano_fp) for pano_fp in panorama_files.values()):
-            return STATUS_OK
+            return {"status": STATUS_OK}
 
         for side, pano_url in pano_urls.items():
             panorama_fp = panorama_files[side]
@@ -39,8 +39,9 @@ class AdamCubicJob(GreenJob):
                 except (ConnectionError, HTTPError):
                     sleep(timeout)
             if not side_downloaded:
-                return STATUS_FAIL, "Failed to retrieve panorama from url."
-        return STATUS_OK
+                return {"status": STATUS_FAIL,
+                        "msg": "Failed to retrieve panorama from url."}
+        return {"status": STATUS_OK}
 
     def _segmentation(self, model, data_dir):
         seg_res = {}

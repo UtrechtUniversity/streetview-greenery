@@ -22,6 +22,7 @@ from greenstreet.db import get_db
 from greenstreet.greenery.measure import Measure, LinearMeasure
 from pprint import pprint
 from greenstreet.greenery.semivariogram import _semivariance
+from greenstreet.API.base.tile import Tile
 
 
 class TileManager(object):
@@ -65,100 +66,128 @@ class TileManager(object):
         self.pano_ids = None
 
     def initialize_tiles(self):
-        for tile_data in self.tile_list.reshape(-1):
+        for tile_name, tile_data in self.tile_list.items():
+            tile_data["tile"] = Tile(
+                tile_name, tile_data["bbox"],
+                Path(self.tiles_dir, tile_name),
+            )
             tile_data["query"] = GridQuery(
                 bbox=tile_data["bbox"], grid_level=self.grid_level)
 
-    def get_meta_data(self, tile_data):
-        if "meta" in tile_data:
-            return
-        param = tile_data["query"].param
-        meta_fp = os.path.join(self.tiles_dir, tile_data["name"],
-                               "meta.json")
-        try:
-            tile_data["meta"] = AdamMetaData.from_file(meta_fp)
-        except FileNotFoundError:
-            tile_data["meta"] = AdamMetaData.from_download(param)
-            os.makedirs(os.path.dirname(meta_fp), exist_ok=True)
-            tile_data["meta"].to_file(meta_fp)
+    def get_jobs(self, job_type="greenery"):
+        all_jobs = {}
+        for tile_name, tile_data in self.tile_list.items():
+            tile = tile_data["tile"]
+            new_jobs = tile.get_jobs(self.job_runner, tile_data["query"],
+                                     job_type=job_type)
+            if len(new_jobs):
+                all_jobs[tile_name] = new_jobs
+        return all_jobs
 
-    def query(self):
-        if self.pano_ids is not None:
-            return self.pano_ids
-        self.pano_ids = {}
-        for tile_data in self.tile_list:
-            query_dir = join(self.tiles_dir, tile_data["name"], "queries")
-            os.makedirs(query_dir, exist_ok=True)
-            query_fp = join(query_dir, tile_data["query"].file_name)
-            try:
-                new_pano_ids = tile_data["query"].pano_ids_from_file(query_fp)
-            except FileNotFoundError:
-                self.get_meta_data(tile_data)
-                new_pano_ids = tile_data["query"].sample_panoramas(
-                    tile_data["meta"])
-                tile_data["query"].to_file(query_fp, new_pano_ids)
+    def execute(self, jobs):
+        results = {}
+        for tile_name, job_list in jobs.items():
+            tile = self.tile_list[tile_name]["tile"]
+            tile.prepare(job_list)
 
-            self.pano_ids.update(
-                {pano_id: tile_data["i_tile"]
-                 for pano_id in new_pano_ids})
-        return self.pano_ids
+        n_jobs = np.sum([len(x) for x in jobs.values()])
+        pbar = tqdm(total=n_jobs)
+        for tile_name, job_list in jobs.items():
+            results[tile_name] = {}
+            for pano_id, job in job_list.items():
+                results[tile_name][pano_id] = self.job_runner.execute(job)
+                pbar.update(1)
+        pbar.close()
+#     def get_meta_data(self, tile_data):
+#         if "meta" in tile_data:
+#             return
+#         param = tile_data["query"].param
+#         meta_fp = os.path.join(self.tiles_dir, tile_data["name"],
+#                                "meta.json")
+#         try:
+#             tile_data["meta"] = AdamMetaData.from_file(meta_fp)
+#         except FileNotFoundError:
+#             tile_data["meta"] = AdamMetaData.from_download(param)
+#             os.makedirs(os.path.dirname(meta_fp), exist_ok=True)
+#             tile_data["meta"].to_file(meta_fp)
 
-    def download(self):
-        pano_ids = self.query()
-#         print(pano_ids)
-#         for pano_id, i_tile in pano_ids.items():
-#             print(pano_id, i_tile, self.tile_list[i_tile])
-        jobs = [
-            {
-                "data_dir": _data_dir(
-                    self.tiles_dir, self.tile_list[i_tile]["name"],
-                    pano_id),
-                "program": "download",
-                "pano_id": pano_id,
-            }
-            for pano_id, i_tile in pano_ids.items()
-        ]
-        for job in jobs:
-            meta_fp = os.path.join(job["data_dir"], "meta.json")
-            pano_id = job.pop("pano_id")
+#     def query(self):
+#         if self.pano_ids is not None:
+#             return self.pano_ids
+#         self.pano_ids = {}
+#         for tile_data in self.tile_list:
+#             query_dir = join(self.tiles_dir, tile_data["name"], "queries")
+#             os.makedirs(query_dir, exist_ok=True)
+#             query_fp = join(query_dir, tile_data["query"].file_name)
+#             try:
+#                 new_pano_ids = tile_data["query"].pano_ids_from_file(query_fp)
+#             except FileNotFoundError:
+#                 self.get_meta_data(tile_data)
+#                 new_pano_ids = tile_data["query"].sample_panoramas(
+#                     tile_data["meta"])
+#                 tile_data["query"].to_file(query_fp, new_pano_ids)
+# 
+#             self.pano_ids.update(
+#                 {pano_id: tile_data["i_tile"]
+#                  for pano_id in new_pano_ids})
+#         return self.pano_ids
 
-#             print(meta_fp)
-            if not isfile(meta_fp):
-                os.makedirs(job["data_dir"], exist_ok=True)
-#                 print(pano_ids)
-                tile_id = pano_ids[pano_id]
-                tile_data = self.tile_list[tile_id]
-                self.get_meta_data(tile_data)
-                tile_data["meta"].to_file(meta_fp, pano_id=pano_id)
-
-            self.job_runner.execute(**job)
-
-    def segmentation(self):
-        pano_ids = self.query()
-        jobs = [
-            {
-                "data_dir": _data_dir(
-                    self.tiles_dir, self.tile_list[i_tile]["name"], pano_id),
-                "program": "segmentation",
-            }
-            for pano_id, i_tile in pano_ids.items()
-        ]
-        for job in jobs:
-            self.job_runner.execute(**job)
-
-    def greenery(self):
-        pano_ids = self.query()
-
-        jobs = [
-            {
-                "data_dir": _data_dir(
-                    self.tiles_dir, self.tile_list[i_tile]["name"], pano_id),
-                "program": "greenery",
-            }
-            for pano_id, i_tile in pano_ids.items()
-        ]
-        for job in jobs:
-            self.job_runner.execute(**job)
+#     def download(self):
+#         pano_ids = self.query()
+# #         print(pano_ids)
+# #         for pano_id, i_tile in pano_ids.items():
+# #             print(pano_id, i_tile, self.tile_list[i_tile])
+#         jobs = [
+#             {
+#                 "data_dir": _data_dir(
+#                     self.tiles_dir, self.tile_list[i_tile]["name"],
+#                     pano_id),
+#                 "program": "download",
+#                 "pano_id": pano_id,
+#             }
+#             for pano_id, i_tile in pano_ids.items()
+#         ]
+#         for job in jobs:
+#             meta_fp = os.path.join(job["data_dir"], "meta.json")
+#             pano_id = job.pop("pano_id")
+# 
+# #             print(meta_fp)
+#             if not isfile(meta_fp):
+#                 os.makedirs(job["data_dir"], exist_ok=True)
+# #                 print(pano_ids)
+#                 tile_id = pano_ids[pano_id]
+#                 tile_data = self.tile_list[tile_id]
+#                 self.get_meta_data(tile_data)
+#                 tile_data["meta"].to_file(meta_fp, pano_id=pano_id)
+# 
+#             self.job_runner.execute(**job)
+# 
+#     def segmentation(self):
+#         pano_ids = self.query()
+#         jobs = [
+#             {
+#                 "data_dir": _data_dir(
+#                     self.tiles_dir, self.tile_list[i_tile]["name"], pano_id),
+#                 "program": "segmentation",
+#             }
+#             for pano_id, i_tile in pano_ids.items()
+#         ]
+#         for job in jobs:
+#             self.job_runner.execute(**job)
+# 
+#     def greenery(self):
+#         pano_ids = self.query()
+# 
+#         jobs = [
+#             {
+#                 "data_dir": _data_dir(
+#                     self.tiles_dir, self.tile_list[i_tile]["name"], pano_id),
+#                 "program": "greenery",
+#             }
+#             for pano_id, i_tile in pano_ids.items()
+#         ]
+#         for job in jobs:
+#             self.job_runner.execute(**job)
 
     def compute_krige(self, var_param, result_dict, krige_dir, window_range=1,
                       upscale=2):
@@ -405,7 +434,9 @@ def compute_tiles(bbox, tile_resolution):
     n_tiles_x = i_max_x-i_min_x
     n_tiles_y = i_max_y-i_min_y
 
-    tile_list = np.array([{} for _ in range(n_tiles_x*n_tiles_y)])
+#     tile_list = np.array([{} for _ in range(n_tiles_x*n_tiles_y)])
+
+    tile_list = {}
 
     for i_tile in range(n_tiles_x*n_tiles_y):
         local_x = (i_tile % n_tiles_x)
@@ -419,15 +450,16 @@ def compute_tiles(bbox, tile_resolution):
         ]
         name = f"NL_tile_{tile_resolution}m_{global_y}_{global_x}"
 
-        tile = tile_list[i_tile]
+        tile = {}
         tile["i_tile"] = i_tile
         tile["global_id_x"] = global_x
         tile["global_id_y"] = global_y
         tile["local_id_x"] = local_x
         tile["local_id_y"] = local_y
         tile["bbox"] = bbox
-        tile["name"] = name
+#         tile["name"] = name
         tile["tile"] = None
+        tile_list[name] = tile
 
     return tile_list
 
@@ -452,3 +484,13 @@ def update_empty_list(empty_fp, lock_file, new_entry):
         with open(empty_fp, "w") as fp:
             json.dump(empty_list, empty_fp)
     return empty_fp
+
+
+def summarize_jobs(jobs):
+    n_tiles = len(jobs)
+    n_jobs = {"download": 0, "segmentation": 0, "greenery": 0}
+    for job in jobs.values():
+        for pipe in job.values():
+            for sub in pipe:
+                n_jobs[sub["program"]] += 1
+    return n_jobs
