@@ -2,7 +2,7 @@
 
 import json
 from json.decoder import JSONDecodeError
-
+from pathlib import Path
 import folium
 import numpy as np
 import matplotlib.pyplot as plt
@@ -144,8 +144,33 @@ class MapImageOverlay:
         plt.ylabel("NDVI")
         plt.legend(loc="lower right")
         plt.show()
-        
-        
+
+    @classmethod
+    def from_krige_dir(cls, krige_dir, *args, **kwargs):
+        index_fp = Path(krige_dir, "index.json")
+        with open(index_fp, "r") as f:
+            index_data = json.load(f)
+
+        lat_grid = np.array(index_data["lat_grid"])
+        long_grid = np.array(index_data["long_grid"])
+        tile_matrix = np.array(index_data["tile_matrix"])
+        greenery = np.zeros((len(lat_grid), len(long_grid)))
+        for i_lat, i_long in np.ndindex(tile_matrix.shape):
+            krige_fp = Path(krige_dir, tile_matrix[i_lat, i_long] + ".json")
+            with open(krige_fp, "r") as f:
+                krige_data = json.load(f)
+            data = np.array(krige_data["data"])
+            j_lat_min = i_lat*data.shape[0]
+            j_long_min = i_long*data.shape[1]
+            greenery[j_lat_min:j_lat_min+data.shape[0],
+                     j_long_min:j_long_min+data.shape[1]] = data
+        try:
+            with open(Path(krige_dir, "alpha.json"), "r") as f:
+                alpha = np.array(json.load(f))
+        except FileNotFoundError:
+            alpha=None
+        return cls(greenery, lat_grid, long_grid, alpha, *args, **kwargs)
+
 
 def _lat_bounds(lat_grid, long_grid):
     "Create lattice bounds from the grid."
@@ -241,7 +266,7 @@ def create_map(green_layers, html_file="index.html"):
             name=name
         ).add_to(m)
     folium.LayerControl().add_to(m)
-    m.save(html_file)
+    m.save(str(html_file))
 
 
 def green_res_to_shp(green_res, green_key, shape_fp):
@@ -282,6 +307,55 @@ def green_res_to_shp(green_res, green_key, shape_fp):
 
     # Close/write to file.
     data_source = None
+
+
+def _get_lat(results):
+    lat = []
+    for x in results.values():
+        lat.extend(x["latitude"])
+    return np.array(lat)
+#     return np.concatenate([np.array(x["latitude"]) for x in results.values()]).reshape(-1)
+
+
+def _get_long(results):
+    long = []
+    for x in results.values():
+        long.extend(x["longitude"])
+    return np.array(long)
+
+
+def compute_alpha(results, lat_grid, long_grid, pixel_dist=5):
+    lat = _get_lat(results)
+    long = _get_long(results)
+    all_coor = np.vstack((lat, long)).T
+    dlat = lat_grid[1] - lat_grid[0]
+    dlong = long_grid[1] - long_grid[0]
+
+    lat_start = np.array([lat_grid[0], long_grid[0]])
+    dl = np.array([dlat, dlong])
+    alpha = np.zeros((len(lat_grid), len(long_grid)))
+
+    for coor in all_coor:
+        coor_base = (coor - lat_start)/dl
+        coor_min = coor - 5*dl
+        coor_max = coor + 5*dl
+        i_min = np.ceil((coor_min - lat_start)/dl)
+        i_max = np.floor((coor_max - lat_start)/dl)
+        i_min[i_min < 0] = 0
+#         i_max[i_max > alpha.shape] = alpha.shape
+        i_max[0] = min(alpha.shape[0]-1, i_max[0])
+        i_max[1] = min(alpha.shape[1]-1, i_max[1])
+
+        i_min = np.array(i_min, dtype=int)
+        i_max = np.array(i_max, dtype=int)
+        for i_lat in range(i_min[0], i_max[0]):
+            lat_pix = i_lat - coor_base[0]
+            for i_long in range(i_min[1], i_max[1]):
+                long_pix = i_long - coor_base[1]
+                d_pix = np.sqrt(lat_pix**2 + long_pix**2)
+                if d_pix < pixel_dist:
+                    alpha[i_lat, i_long] = 1
+    return alpha
 
 
 def _empty_green_res():

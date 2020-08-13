@@ -44,7 +44,7 @@ class AdamMetaData():
         return meta
 
     @classmethod
-    def from_download(cls, param):
+    def from_download(cls, param, filter_water=True):
         url = "https://api.data.amsterdam.nl/panorama/panoramas/"
         meta_list = []
 
@@ -102,7 +102,8 @@ class AdamMetaData():
                 response_dict["_embedded"]["panoramas"])
             # Add new meta-data to list.
             meta_list.extend(new_list)
-        meta_data = {meta["pano_id"]: meta for meta in meta_list}
+        meta_data = {meta["pano_id"]: meta for meta in meta_list
+                     if not (filter_water and "surface-water" in meta["tags"])}
         meta_instance = cls(param=param)
         meta_instance.meta_data = meta_data
         return meta_instance
@@ -117,7 +118,7 @@ class AdamMetaData():
             meta_dict = {
                 "name": self.name,
                 "param": self.param,
-                "meta_timestamp": str(self.meta_timestamp),
+                "timestamp": str(self.meta_timestamp),
                 "meta_data": self.meta_data
             }
         else:

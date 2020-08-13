@@ -1,6 +1,6 @@
 from math import sqrt, pi, cos
 
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist, cdist
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 import numpy as np
@@ -22,20 +22,26 @@ def _lat_long_to_metric(lat, long):
 
 
 def _stack_green_res(green_res):
-    if 'greenery' not in green_res:
+    if 'data' not in green_res:
         return None, None
 
     lat, long = _lat_long_to_metric(green_res['latitude'],
                                     green_res['longitude'])
 
     X = np.vstack((long, lat)).T
-    z = np.array(green_res['greenery'])
+    z = np.array(green_res['data'])
     return X, z
 
 
 def _full_dist(i_coor, i_green):
     all_dist = pdist(i_coor, metric="euclidean")
     all_var = 0.5*pdist(i_green[:, None], metric="sqeuclidean")
+    return all_dist, all_var
+
+
+def _full_cross_dist(i_coor, i_green, j_coor, j_green):
+    all_dist = cdist(i_coor, j_coor, metric="euclidean").reshape(-1)
+    all_var = 0.5*cdist(i_green[:, None], j_green[:, None]).reshape(-1)
     return all_dist, all_var
 
 
@@ -71,26 +77,41 @@ def _compute_dist(tile_dist, i_tile_result, j_tile_result):
         n_sample = round(i_n_sample*j_n_sample)
         max_sample = i_green.shape[0]*j_green.shape[0]
         n_sample = min(max(10000, n_sample), max_sample)
+        if n_sample == max_sample:
+            return _full_cross_dist(i_coor, i_green, j_coor, j_green)
         return _sample_dist(i_coor, i_green, j_coor, j_green, n_sample)
 
 
-def _semivariance(tile_matrix, result_dict, nlags=None,
+def _semivariance(tile_data, result_dict, nlags=None,
                   variogram_model="exponential",
                   plot=False):
     all_dist = []
     all_cor = []
 
-    for ix, iy in np.ndindex(tile_matrix.shape):
-        i_name = tile_matrix[ix, iy]["name"]
-        i_tile_result = result_dict[i_name]
-        for jx, jy in np.ndindex(tile_matrix.shape):
-            if tile_matrix[ix, iy]['i_tile'] > tile_matrix[jx, jy]['i_tile']:
+    for i_tile_name, i_tile in tile_data.items():
+        i_tile_id = i_tile["i_tile"]
+        i_tile_result = result_dict[i_tile_name]
+        for j_tile_name, j_tile in tile_data.items():
+            j_tile_id = j_tile["i_tile"]
+            j_tile_result = result_dict[j_tile_name]
+            if i_tile_id > j_tile_id:
                 continue
-            j_name = tile_matrix[jx, jy]["name"]
-            j_tile_result = result_dict[j_name]
-            tile_dist = (ix-jx)**2 + (iy-jy)**2
+            dx = i_tile["local_id_x"] - j_tile["local_id_x"]
+            dy = i_tile["local_id_y"] - j_tile["local_id_y"]
+            tile_dist = dx**2 + dy**2
             dist_val, cor_val = _compute_dist(tile_dist, i_tile_result,
                                               j_tile_result)
+#     for ix, iy in np.ndindex(tile_matrix.shape):
+#         i_name = tile_matrix[ix, iy]["name"]
+#         i_tile_result = result_dict[i_name]
+#         for jx, jy in np.ndindex(tile_matrix.shape):
+#             if tile_matrix[ix, iy]['i_tile'] > tile_matrix[jx, jy]['i_tile']:
+#                 continue
+#             j_name = tile_matrix[jx, jy]["name"]
+#             j_tile_result = result_dict[j_name]
+#             tile_dist = (ix-jx)**2 + (iy-jy)**2
+#             dist_val, cor_val = _compute_dist(tile_dist, i_tile_result,
+#                                               j_tile_result)
             all_dist.extend(dist_val)
             all_cor.extend(cor_val)
 #             print(ix, iy, jx, jy)

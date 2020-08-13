@@ -99,25 +99,34 @@ class Tile():
 
         if query is not None:
             query_id = "_".join([job_runner.name, query.name])
-            pano_ids = [pano_id for pano_id in new_result_data]
-            timestamp = [new_result_data[pano_id]["meta"]["timestamp"]
-                         for pano_id in pano_ids]
-            latitude = [new_result_data[pano_id]["meta"]["latitude"]
-                        for pano_id in pano_ids]
-            longitude = [new_result_data[pano_id]["meta"]["longitude"]
-                         for pano_id in pano_ids]
-            data = {green_class: [] for green_class in new_result_data[
-                pano_ids[0]]["fractions"]}
-            for pano_id in pano_ids:
-                for green_class in data:
-                    data[green_class].append(
-                        new_result_data[pano_id]["fractions"][green_class])
-            result_data[query_id] = {
-                "timestamp": timestamp,
-                "latitude": latitude,
-                "longitude": longitude,
-                "data": data,
-            }
+            if query_id not in result_data:
+                results = self.collect_results(job_runner, query)
+                result_data[query_id] = results
+
+    def collect_results(self, job_runner, query):
+        pano_ids = self.get_pano_ids(query)
+        tile_data = self.tile_data
+        results = {
+            "timestamp": [],
+            "latitude": [],
+            "longitude": [],
+            "pano_id": [],
+            "data": [],
+        }
+        for pano_id in pano_ids:
+            try:
+
+                meta = tile_data["download"][
+                    job_runner.pic_type][pano_id]["data"]
+                green_data = tile_data["greenery"][job_runner.name][
+                    pano_id]["data"]
+                for x in ["timestamp", "latitude", "longitude"]:
+                    results[x].append(meta[x])
+                results["pano_id"].append(pano_id)
+                results["data"].append(green_data)
+            except KeyError:
+                pass
+        return results
 
     def save(self):
         if self._result_data is not None:

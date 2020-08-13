@@ -10,10 +10,19 @@ class LinearMeasure():
         self.weights = weights
 
     def compute(self, green_res):
+        if not isinstance(green_res, dict):
+            return [self.compute(x) for x in green_res]
         measure = self.intercept
         for green_class, slope in self.weights.items():
             measure += green_res[green_class]*slope
         return measure
+
+#     def compute_list(self, green_res):
+#         
+#         meas = {}
+#         for pano_id, green_data in green_res.items():
+#             meas[pano_id] = self.compute(green_data)
+#         return meas
 
     @property
     def name(self):
