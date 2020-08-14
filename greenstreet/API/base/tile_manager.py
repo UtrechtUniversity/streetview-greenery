@@ -2,7 +2,7 @@ import os
 import json
 from math import cos, pi, ceil, floor
 from pathlib import Path
-
+from configparser import ConfigParser
 from tqdm import tqdm
 import numpy as np
 
@@ -11,7 +11,6 @@ from greenstreet.utils.mapping import compute_alpha
 from greenstreet.utils import _extend_green_res
 from greenstreet.utils.selection import select_bbox, get_segmentation_model,\
     get_green_model, get_job_runner
-from greenstreet.sqlock import SQLiteLock
 from greenstreet.query import GridQuery
 from greenstreet.greenery.measure import LinearMeasure
 from greenstreet.greenery.semivariogram import _semivariance
@@ -22,10 +21,10 @@ class TileManager(object):
     def __init__(self, data_dir, bbox_str="amsterdam",
                  grid_level=0, tile_resolution=1024,
                  seg_model_name='deeplab-mobilenet',
-                 green_measure='vegetation',
-                 all_years=False, use_panorama=False,
-                 weighted_panorama=True,
-                 data_source="adam"):
+                 green_weights={'vegetation': 1},
+                 use_panorama=False,
+                 use_weighting=True,
+                 ):
 
         self.data_dir = data_dir
         self.bbox_str = bbox_str
@@ -37,27 +36,58 @@ class TileManager(object):
         self.krige_dir = os.path.join(data_dir, "krige")
         self.db_fp = os.path.join(data_dir, "results.db")
         self.lock_fp = os.path.join(self.cache_dir, "lock.db")
-        self.empty_fp = os.path.join(self.cache_dir, "empty_tiles.json")
-        self.empty_files = load_empty_list(self.empty_fp, self.lock_fp)
+#         self.empty_fp = os.path.join(self.cache_dir, "empty_tiles.json")
+#         self.empty_files = load_empty_list(self.empty_fp, self.lock_fp)
 
-        self.measure = LinearMeasure(weights={"vegetation": 1})
+        self.green_weights = green_weights
+        self.measure = LinearMeasure(weights=green_weights)
         self.grid_level = grid_level
-        self.all_years = all_years
         self.use_panorama = use_panorama
-        self.data_source = data_source
-        self.green_measure = green_measure
-        self.green_mat = None
-        self.all_green_res = None
+        self.use_weighting = use_weighting
+        self.measure_name = "linear"
+        self.seg_model_name = seg_model_name
 
         self.seg_model = get_segmentation_model(seg_model_name)
-        self.green_model = get_green_model(use_panorama, weighted_panorama)
+        self.green_model = get_green_model(use_panorama, use_weighting)
         self.job_runner = get_job_runner(
             use_panorama=use_panorama,
             seg_model=self.seg_model,
             green_model=self.green_model)
 
         self.initialize_tiles()
-        self.pano_ids = None
+
+    def to_config(self, config_fp):
+        config = ConfigParser()
+        config['global'] = {
+            'bbox_str': self.bbox_str,
+            'use_panorama': self.use_panorama,
+            'use_weighting': self.use_weighting,
+            'seg_model_name': self.seg_model_name,
+            'measure_name': self.measure_name,
+            'grid_level': self.grid_level,
+        }
+        config['measure'] = {}
+        for green_class, weight in self.green_weights.items():
+            config['measure'][green_class] = str(weight)
+        with open(config_fp, "w") as f:
+            config.write(f)
+
+    @classmethod
+    def from_config(cls, config_fp, data_dir):
+        config = ConfigParser()
+        config.read(config_fp)
+        bbox_str = config['global']['bbox_str']
+        use_panorama = (config['global']['use_panorama'].lower() == "true")
+        use_weighting = (config['global']['use_weighting'].lower() == "true")
+        seg_model_name = config['global']['seg_model_name']
+        measure_name = config['global']['measure_name']
+        grid_level = int(config['global']['grid_level'])
+        green_weights = {}
+        for green_class, val in config['measure'].items():
+            green_weights[green_class] = float(val)
+        return cls(data_dir=data_dir, bbox_str=bbox_str, grid_level=grid_level,
+                   seg_model_name=seg_model_name, green_weights=green_weights,
+                   use_panorama=use_panorama, use_weighting=use_weighting)
 
     def initialize_tiles(self):
         for tile_name, tile_data in self.tile_list.items():
@@ -406,27 +436,27 @@ def compute_tiles(bbox, tile_resolution):
 
     return tile_list
 
-
-def load_empty_list(empty_fp, lock_file):
-    with SQLiteLock(lock_file, lock_name=empty_fp, blocking=True):
-        try:
-            with open(empty_fp, "r") as fp:
-                empty_tiles = json.load(fp)
-        except FileNotFoundError:
-            empty_tiles = {}
-            with open(empty_fp, "w") as fp:
-                json.dump(empty_tiles, fp)
-    return empty_tiles
-
-
-def update_empty_list(empty_fp, lock_file, new_entry):
-    with SQLiteLock(lock_file, lock_name=empty_fp, blocking=True):
-        with open(empty_fp, "r") as fp:
-            empty_list = json.load(fp)
-        empty_list[new_entry] = True
-        with open(empty_fp, "w") as fp:
-            json.dump(empty_list, empty_fp)
-    return empty_fp
+# 
+# def load_empty_list(empty_fp, lock_file):
+#     with SQLiteLock(lock_file, lock_name=empty_fp, blocking=True):
+#         try:
+#             with open(empty_fp, "r") as fp:
+#                 empty_tiles = json.load(fp)
+#         except FileNotFoundError:
+#             empty_tiles = {}
+#             with open(empty_fp, "w") as fp:
+#                 json.dump(empty_tiles, fp)
+#     return empty_tiles
+# 
+# 
+# def update_empty_list(empty_fp, lock_file, new_entry):
+#     with SQLiteLock(lock_file, lock_name=empty_fp, blocking=True):
+#         with open(empty_fp, "r") as fp:
+#             empty_list = json.load(fp)
+#         empty_list[new_entry] = True
+#         with open(empty_fp, "w") as fp:
+#             json.dump(empty_list, empty_fp)
+#     return empty_fp
 
 
 def summarize_jobs(jobs):

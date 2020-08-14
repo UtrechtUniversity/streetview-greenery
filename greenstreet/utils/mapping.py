@@ -342,7 +342,6 @@ def compute_alpha(results, lat_grid, long_grid, pixel_dist=5):
         i_min = np.ceil((coor_min - lat_start)/dl)
         i_max = np.floor((coor_max - lat_start)/dl)
         i_min[i_min < 0] = 0
-#         i_max[i_max > alpha.shape] = alpha.shape
         i_max[0] = min(alpha.shape[0]-1, i_max[0])
         i_max[1] = min(alpha.shape[1]-1, i_max[1])
 

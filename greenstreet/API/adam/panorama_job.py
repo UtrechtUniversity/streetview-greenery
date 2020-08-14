@@ -2,7 +2,7 @@ import os
 from time import sleep
 
 import urllib.request
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 from greenstreet.config import STATUS_OK, STATUS_FAIL
 from greenstreet.API.base.job import GreenJob
@@ -22,7 +22,7 @@ class AdamPanoramaJob(GreenJob):
             try:
                 urllib.request.urlretrieve(pano_url, panorama_fp)
                 return {"status": STATUS_OK}
-            except (ConnectionError, HTTPError):
+            except (ConnectionError, HTTPError, URLError):
                 sleep(timeout)
         return {"status": STATUS_FAIL,
                 "msg": "Failed to retrieve panorama from url."}

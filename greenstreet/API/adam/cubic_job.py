@@ -2,7 +2,7 @@ import os
 from time import sleep
 
 import urllib.request
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 from greenstreet.config import STATUS_OK, STATUS_FAIL
 from greenstreet.API.base.job import GreenJob
@@ -36,7 +36,7 @@ class AdamCubicJob(GreenJob):
                 try:
                     urllib.request.urlretrieve(pano_url, panorama_fp)
                     side_downloaded = True
-                except (ConnectionError, HTTPError):
+                except (ConnectionError, HTTPError, URLError):
                     sleep(timeout)
             if not side_downloaded:
                 return {"status": STATUS_FAIL,

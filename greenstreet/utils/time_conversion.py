@@ -11,10 +11,3 @@ def get_time_from_str(dt_str):
             pass
 
     raise ValueError(f"Error converting time '{dt_str}'.")
-#     try:
-#         dt = datetime.datetime.strptime(dt_str, )
-#     except ValueError:
-#         dt = datetime.datetime.strptime(dt_str, )
-#     except ValueError:
-#         dt = datetime.datetime.strptime(dt_str, )
-#     return dt

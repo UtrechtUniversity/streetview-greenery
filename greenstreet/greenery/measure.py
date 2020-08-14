@@ -17,13 +17,6 @@ class LinearMeasure():
             measure += green_res[green_class]*slope
         return measure
 
-#     def compute_list(self, green_res):
-#         
-#         meas = {}
-#         for pano_id, green_data in green_res.items():
-#             meas[pano_id] = self.compute(green_data)
-#         return meas
-
     @property
     def name(self):
         weights_str = [f"{green_class}{slope}"
