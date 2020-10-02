@@ -157,6 +157,8 @@ def plot_segmentation(image_fp, seg_map, color_map, show=True,
     label_names = np.array(color_map[0])
     label_colors = np.array(color_map[1])
 
+    label_to_id = {k: i for i, k in enumerate(label_names)}
+
     plt.figure(figsize=(15, 5))
     grid_spec = gridspec.GridSpec(1, 4, width_ratios=[6, 6, 6, 1])
 
@@ -186,16 +188,17 @@ def plot_segmentation(image_fp, seg_map, color_map, show=True,
         new_label_names = []
         for key in sorted(plot_labels.items(), key=operator.itemgetter(1),
                           reverse=True):
-            label_id = key[0]
-            unique_labels.append(label_id)
-            frac = round(100*plot_labels[label_id], 1)
-            new_label_names.append(f"{label_names[label_id]} ({frac}%)")
+            class_name = key[0]
+            frac = round(100*plot_labels[class_name], 1)
+            if frac > 0:
+                unique_labels.append(label_to_id[class_name])
+                new_label_names.append(f"{class_name} ({frac}%)")
         label_names = np.array(new_label_names)
         unique_labels = np.array(unique_labels)
     else:
         unique_labels = np.unique(seg_map)
         label_names = label_names[unique_labels]
-    print(unique_labels)
+
     ax = plt.subplot(grid_spec[3])
     img_colors = np.reshape(label_colors[unique_labels], (-1, 1, 3))
     plt.imshow(img_colors.astype(np.uint8), interpolation='nearest')

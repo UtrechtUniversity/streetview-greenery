@@ -168,20 +168,22 @@ class MapImageOverlay:
             with open(Path(krige_dir, "alpha.json"), "r") as f:
                 alpha = np.array(json.load(f))
         except FileNotFoundError:
-            alpha=None
+            alpha = None
         return cls(greenery, lat_grid, long_grid, alpha, *args, **kwargs)
 
 
 def _lat_bounds(lat_grid, long_grid):
     "Create lattice bounds from the grid."
+    dlat = (lat_grid.max() - lat_grid.min())/(len(lat_grid)-1)
+    dlong = (long_grid.max() - long_grid.min())/(len(long_grid)-1)
     bounds = [
         [
-            lat_grid.min(),
-            long_grid.min(),
+            lat_grid.min()-0.5*dlat,
+            long_grid.min()-0.5*dlong,
         ],
         [
-            lat_grid.max(),
-            long_grid.max(),
+            lat_grid.max()+0.5*dlat,
+            long_grid.max()+0.5*dlong,
         ]
     ]
     return bounds
@@ -231,7 +233,7 @@ def green_map_to_img(green_i, alpha_i, min_green, max_green,
     return green_rgba
 
 
-def create_map(green_layers, html_file="index.html"):
+def create_map(green_layers, results, html_file="index.html"):
     """ Create an HTML map from map overlays.
 
     Arguments:
@@ -265,6 +267,11 @@ def create_map(green_layers, html_file="index.html"):
             bounds=_lat_bounds(lat_grid, long_grid),
             name=name
         ).add_to(m)
+    for tile in results.values():
+        for i in range(len(tile['latitude'])):
+            folium.vector_layers.Circle(
+                (tile['latitude'][i], tile['longitude'][i]),
+                radius=3, popup=tile['data'][i]).add_to(m)
     folium.LayerControl().add_to(m)
     m.save(str(html_file))
 

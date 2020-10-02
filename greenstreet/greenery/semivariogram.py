@@ -50,7 +50,13 @@ def euc_dist(a, b):
 
 
 def _sample_dist(i_coor, i_green, j_coor, j_green, n_sample):
-
+#     samples = np.random.choice(
+#         i_green.shape[0]*j_green.shape[0], size=n_sample,
+#         replace=False)
+#     i_sample_idx = samples/j_green.shape[0]
+#     j_sample_idx = samples % j_green.shape[0]
+#     all_dist = euc_dist(i_coor[i_sample_idx], j_coor[j_sample_idx])
+#     all_var = 0.5*(i_green[i_sample_idx] - j_green[j_sample_idx])**2
     i_sample_idx = np.random.choice(i_green.shape[0], size=n_sample)
     j_sample_idx = np.random.choice(j_green.shape[0], size=n_sample)
     all_dist = euc_dist(i_coor[i_sample_idx], j_coor[j_sample_idx])
