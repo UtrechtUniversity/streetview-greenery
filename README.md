@@ -10,10 +10,6 @@ The base idea of this package is to download street view panorama (or other) pic
 
 Sampled map of Amsterdam/Almere: [link](https://qubixes.github.io/streetview-greenery/docs/adam_alm.html)
 
-Detailed map of Muiderpoort region: [link](https://qubixes.github.io/streetview-greenery/docs/muiderpoort.html)
-
-Detailed map of Gaasperdam region: [link](https://qubixes.github.io/streetview-greenery/docs/mijndenhof.html)
-
 ## Installation
 
 There is at the moment no real installation script. Just make sure you have all the requirements below:
@@ -42,11 +38,11 @@ There are two ways to interact with this package: Command Line Interfaces (CLI) 
 
 #### Creating a dataset [street_green.py]
 
-The script "streetgreen.py" is the workhorse of the package, downloading and processing images. Currently a single data source is included, which is panoramas provided freely by the municipality of Amsterdam: [data.amsterdam.nl](https://data.amsterdam.nl).
+The script "streetgreen.py" is the workhorse of the package, downloading and processing images, doing spatial kriging and creating maps. Currently a single data source is included, which is panoramas provided freely by the municipality of Amsterdam: [data.amsterdam.nl](https://data.amsterdam.nl).
 
 By default the program will select some area in Amsterdam/Almere and it will sample panoramas in a grid. At the coarsest level it will obtain one data point for each 1km x 1km tile. Then from the greenery measure of each of these tiles, a map will be constructed using a Kriging procedure. 
 
-Options for the "street_green.py" script can be obtained by navigating to the installation directory and typing:
+Options for the "streetgreen.py" script can be obtained by navigating to the installation directory and typing:
 
 ```sh
 ./streetgreen.py --help
@@ -56,9 +52,13 @@ The most important option is to select the bounding box of the area to map, with
 
 The segmentation model can be selected through `-m/--model`. Currently, only pretrained models from [DeepLab](https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md) are available for selection. Choose "deeplab-mobilenet" for fast inference and "deeplab-xception_71" for higher quality inference.
 
-Process based parallelization is available through a combination of the `-n` and `-i` options, which distributes the 1km x 1km tiles over differnt jobs. For example if you have two machines, then on one you would run `-n 2 -i 0`, while you would give the other machine the `-n 2 -i 1` option. Then merging the tile data, you would have the complete data that you would get running with default options.
+Process based parallelization is available through a combination of the `-n` and `-i` options, which distributes the 1km x 1km tiles over different jobs. For example if you have two machines, then on one you would run `-n 2 -i 0`, while you would give the other machine the `-n 2 -i 1` option. Then merging the tile data, you would have the complete data that you would get running with default options.
 
-The resolution can be adjusted by using the `-l/--grid` options. Every level higher increases the spatial resolution of the map by a factor of 2, with the lowest being 1km x 1km.
+The resolution can be adjusted by using the `-l/--grid` options. Every level higher increases the spatial resolution of the map by a factor of 2, with the lowest being 1km x 1km, using the option `-l 0`.
+
+Instead of sampling only once per grid point, the option `-y/--historical-data` allows for sampling of each available year at each grid point.
+
+By default the program uses cubic pictures. With the `--panorama` option, panorama images are used instead, which takes less time, since only one instead of four pictures are analysed. But accuracy is expected to be reduced.
 
 #### Individual picture analysis [seg_analysis.py]
 
@@ -68,6 +68,10 @@ Segmentation analysis of individual/arbitrary pictures/panoramas is available th
 
 To compare different "green" measures against each other, the `comp_green.py` script can be used. It computes a linear regression between different variables or the same variable but panoramic vs cubic pictures.
 
+
+#### Temporal comparison [ time_compare.py ]
+
+Compare points at the same location but different points in time with each other to observe trends of variations with regards to season, year, time of day.
 
 ## Application Programming Interface
 
