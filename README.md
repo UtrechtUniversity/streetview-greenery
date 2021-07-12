@@ -1,5 +1,7 @@
 # streetview-greenery
 
+## Most of the package does not work anymore, because the municipality of amsterdam made their panorama data private.
+
 Project to retrieve and process panoramic photo's and compute the greenery as perceived from street level.
 
 ## Description
@@ -12,23 +14,7 @@ Sampled map of Amsterdam/Almere: [link](https://qubixes.github.io/streetview-gre
 
 ## Installation
 
-There is at the moment no real installation script. Just make sure you have all the requirements below:
-
-### Requirements / dependencies
-
-- Python 3.6+
-- Pillow
-- numpy
-- matplotlib
-- tensorflow
-- urllib
-- pykrige
-- scipy
-- tqdm
-- requests
-- gdal
-- folium
-- pybase64 [optional]
+There is at the moment no real installation script. First install the (non-python) GDAL library seperately. Then install the python bindings that has the same version (`pip install "gdal==x"`), where x is the version of your GDAL library. Finally install the remaining requirements using `pip install -r requirements.txt`.
 
 ## Quickstart [Command Line Interface]
 

@@ -1,4 +1,4 @@
-# Copyright 2019 The ASReview Authors. All Rights Reserved.
+# Copyright 2021 The streetview-greenery authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
 
 # based on https://github.com/pypa/sampleproject - MIT License
 
-# Always prefer setuptools over distutils
 import re
 from setuptools import setup, find_packages
 from os import path
@@ -37,7 +36,7 @@ def get_long_description():
 
 setup(
     name='greenstreet',
-    version="0.0.1",
+    version="1.0.0",
     description='Streetview Greenery',
     long_description=get_long_description(),
     long_description_content_type='text/markdown',
@@ -76,6 +75,6 @@ setup(
         ],
     },
     project_urls={
-        'Source': 'https://github.com/qubixes/streetview-greenery',
+        'Source': 'https://github.com/UtrechtUniversity/streetview-greenery',
     },
 )

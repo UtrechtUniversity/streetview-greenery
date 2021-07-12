@@ -1,21 +1,23 @@
 import json
 import os
+from pathlib import Path
 
 from greenstreet.utils.selection import select_bbox, get_segmentation_model
 from greenstreet.utils.selection import get_green_model
 from greenstreet.API import TileManager
+from greenstreet.API.base.tile_manager import summarize_jobs
 from greenstreet.utils.mapping import create_map, green_res_to_shp
 
 
-def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
+def compute_map(model='deeplab-mobilenet',
+                greenery_measure='vegetation',
                 n_job=1, job_id=0, bbox_str='amsterdam', grid_level=0,
                 krige_only=False, skip_overlay=False, prepare_only=False,
-                use_panorama=False, all_years=False):
+                use_panorama=False, all_years=False,
+                data_dir=None):
 
-    bbox = select_bbox(bbox_str)
-    seg_kwargs = get_segmentation_model(model)
-    green_kwargs = get_green_model(greenery_measure)  # TODO: Fix
-    cubic_pictures = not use_panorama
+    if data_dir is None:
+        data_dir = Path("data.amsterdam", bbox_str)
 
     krige_n_job = n_job
     krige_job_id = job_id
@@ -23,13 +25,15 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
         n_job = 1
         job_id = 0
 
-    tile_man = TileManager(bbox=bbox, grid_level=grid_level, n_job=n_job,
-                           job_id=job_id, **seg_kwargs,
-                           cubic_pictures=cubic_pictures,
-                           all_years=all_years,
-                           **green_kwargs)
+    tile_man = TileManager(bbox_str=bbox_str, grid_level=grid_level,
+                           seg_model_name=model,
+                           use_panorama=use_panorama,
+                           green_weights={greenery_measure: 1},
+                           data_dir=data_dir)
 
-    green_res = tile_man.green_direct(prepare_only=prepare_only)
+    jobs = tile_man.get_jobs()
+    summarize_jobs(jobs)
+    print(green_res)
 
     if prepare_only or skip_overlay:
         return
@@ -39,7 +43,7 @@ def compute_map(model='deeplab-mobilenet', greenery_measure='vegetation',
     print(overlay)
     if krige_n_job != 1:
         return
-    out_dir = os.path.join("data.amsterdam", "maps", key)
+    out_dir = Path(data_dir, "maps", key)
     overlay_file = f"{bbox_str}.html"
     overlay_fp = os.path.join(out_dir, overlay_file)
     geo_tiff_fp = os.path.join(out_dir, f"{bbox_str}.tif")
